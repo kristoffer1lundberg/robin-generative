@@ -30,47 +30,54 @@ function draw() {
   const gridW = cellSize * cols;
   const gridH = cellSize * rows;
 
-  // Top-left offset to center the grid
-  const x0 = width / 2 - gridW / 2;
-  const y0 = height / 2 - gridH / 2;
+  // Calculate grid's top-left corner position (accounting for CENTER mode)
+  const gridTopLeftX = width / 2 - gridW / 2;
+  const gridTopLeftY = height / 2 - gridH / 2;
+
+  // Translate coordinate system to grid's top-left corner
+  push();
+  translate(gridTopLeftX, gridTopLeftY);
+
+  // Now all coordinates are relative to the grid's coordinate system
+  rectMode(CENTER);
 
   // First, draw all grid cells
-  stroke(60);
+  stroke(40);
   noFill();
   for (let i = 0; i < cols; i++) {
     for (let j = 0; j < rows; j++) {
-      let x = x0 + i * cellW;
-      let y = y0 + j * cellH;
+      // Cell center in grid coordinates
+      let x = cellW / 2 + i * cellW;
+      let y = cellH / 2 + j * cellH;
       rect(x, y, cellW, cellH);
     }
   }
 
   // Then, draw all crosshairs on top
   push();
-  stroke(255, 100, 50);
+  stroke(80);
   strokeWeight(1);
   for (let i = 0; i < cols; i++) {
     for (let j = 0; j < rows; j++) {
-      let x = x0 + i * cellW;
-      let y = y0 + j * cellH;
-      // Draw a crosshair at the bottom right of every cell
-      // Since x,y is the center (CENTER mode), bottom-right corner is at (x + cellW/2, y + cellH/2)
-      let crossX = x + cellW / 2;
-      let crossY = y + cellH / 2;
-      drawCrosshair(crossX, crossY, 12);
+      // Bottom-right corner of cell in grid coordinates
+      let crossX = (i + 1) * cellW;
+      let crossY = (j + 1) * cellH;
+      if (i < cols - 1 && j < rows - 1) {
+        drawCrosshair(crossX, crossY, cellSize * 0.2);
+      }
     }
   }
   pop();
 
-  // Draw a rectangle around the grid with a stronger border color
-  // Account for CENTER mode: cells are centered at their positions
+  // Draw border rectangle around the grid
   push();
-  stroke(255);
-  strokeWeight(1);
+  stroke(120);
+  strokeWeight(0.5);
   rectMode(CORNER);
-  // Adjust for CENTER mode: subtract half cell size from top-left, add half cell size to dimensions
-  rect(x0 - cellW / 2, y0 - cellH / 2, gridW, gridH);
+  rect(0, 0, gridW, gridH);
   pop();
+
+  pop(); // End grid coordinate system
 
   // Use the parameters from the GUI
   // Access variables via guiParams object
