@@ -129,6 +129,28 @@ function draw() {
   }
 }
 
+function drawAnimatedGlow(x, y, baseRadius) {
+  // Animation parameters
+  const glowSpeed = 0.05; // Speed of the glow animation
+  const glowIntensity = sin(frameCount * glowSpeed);
+  const glowOpacity = mapRange(glowIntensity, -1, 1, 0.3, 0.8);
+  const glowSizeMultiplier = mapRange(glowIntensity, -1, 1, 1.5, 2.5);
+
+  // Draw multiple circles with decreasing opacity to create glow effect
+  push();
+  noStroke();
+
+  // Outer glow layers
+  for (let i = 3; i >= 1; i--) {
+    const layerOpacity = glowOpacity * (i / 3) * 0.5;
+    const layerSize = baseRadius * glowSizeMultiplier * (1 + i * 0.3);
+    fill(255, 255, 255, layerOpacity * 255);
+    circle(x, y, layerSize * 2);
+  }
+
+  pop();
+}
+
 function drawCellHoverCircles(cols, rows, cellW, cellH) {
   // Convert mouse position to grid coordinates
   const gridTopLeftX = width / 2 - (cellW * cols) / 2;
@@ -182,6 +204,11 @@ function drawCellHoverCircles(cols, rows, cellW, cellH) {
         // Calculate animated radius
         const animatedRadius = circleRadius * cellHoverAnimations[cellNumber];
 
+        // Draw animated glow if selected
+        if (isSelected) {
+          drawAnimatedGlow(circleX, circleY, circleRadius);
+        }
+
         // Draw hover circle
         push();
         stroke(255);
@@ -192,6 +219,10 @@ function drawCellHoverCircles(cols, rows, cellW, cellH) {
         // If selected, keep circle visible at full size
         if (isSelected) {
           cellHoverAnimations[cellNumber] = 1;
+
+          // Draw animated glow behind selected circle
+          drawAnimatedGlow(circleX, circleY, circleRadius);
+
           // Draw selected circle
           push();
           stroke(255);
