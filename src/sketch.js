@@ -180,6 +180,12 @@ function drawAnimatedGlow(x, y, baseRadius, col, row, cellNumber) {
   const baseRadiusAnimationSpeed = 0.02; // Base speed of radius pulsing
   const radiusPulseAmount = 0.2; // How much the radius can pulse (20% variation)
 
+  // Calculate animated radius once for all particles (same radius for all)
+  const radiusPulse = sin(frameCount * baseRadiusAnimationSpeed);
+  const animatedOrbitRadius =
+    staticOrbitRadius *
+    mapRange(radiusPulse, -1, 1, 1 - radiusPulseAmount, 1 + radiusPulseAmount);
+
   // Vary number of particles based on hash (using yet another mapping)
   const particleHash = (((col * 56473829) ^ (row * 92837465)) % 1000) / 1000;
   const minParticles = 4;
@@ -202,47 +208,11 @@ function drawAnimatedGlow(x, y, baseRadius, col, row, cellNumber) {
     // Each particle starts at a different angle offset
     const angleOffset = (TWO_PI * i) / numParticles;
 
-    // Add individual speed variation for each particle
-    const particleSpeedVariation = 0.3; // How much each particle's speed can vary
-    const particleSpeedHash = ((i * 73856093) % 1000) / 1000;
-    const particleSpeedMultiplier = mapRange(
-      particleSpeedHash,
-      0,
-      1,
-      1 - particleSpeedVariation,
-      1 + particleSpeedVariation
-    );
-    const particleSpeed = individualSpeed * particleSpeedMultiplier;
+    // All particles use the same speed to maintain spacing and prevent overlaps
+    // Animated angle based on frameCount and same speed for all particles
+    const angle = frameCount * individualSpeed + angleOffset;
 
-    // Add individual radius animation speed variation for each particle
-    const radiusSpeedVariation = 0.4; // How much each particle's radius speed can vary
-    const radiusSpeedHash = ((i * 19349663) % 1000) / 1000;
-    const radiusSpeedMultiplier = mapRange(
-      radiusSpeedHash,
-      0,
-      1,
-      1 - radiusSpeedVariation,
-      1 + radiusSpeedVariation
-    );
-    const particleRadiusSpeed =
-      baseRadiusAnimationSpeed * radiusSpeedMultiplier;
-
-    // Calculate animated radius for this specific particle
-    const radiusPulse = sin(frameCount * particleRadiusSpeed);
-    const animatedOrbitRadius =
-      staticOrbitRadius *
-      mapRange(
-        radiusPulse,
-        -1,
-        1,
-        1 - radiusPulseAmount,
-        1 + radiusPulseAmount
-      );
-
-    // Animated angle based on frameCount and individual particle speed
-    const angle = frameCount * particleSpeed + angleOffset;
-
-    // Calculate particle position in circular orbit with animated radius
+    // Calculate particle position in circular orbit with same radius for all particles
     const particleX = x + cos(angle) * animatedOrbitRadius;
     const particleY = y + sin(angle) * animatedOrbitRadius;
 
