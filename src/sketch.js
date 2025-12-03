@@ -320,6 +320,64 @@ function drawSelectedCellLines(cols, rows, cellW, cellH) {
   drawingContext.setLineDash([]);
 
   pop();
+
+  // Draw animated dots moving along the lines
+  drawAnimatedDots(cols, rows, cellW, cellH);
+}
+
+function drawAnimatedDots(cols, rows, cellW, cellH) {
+  // Only draw animated dots if there are at least 2 selected cells
+  if (selectedCells.length < 2) {
+    return;
+  }
+
+  push();
+  noStroke();
+  fill(255);
+
+  const dotSpeed = 0.01; // Speed of dot movement (0-1 per frame)
+  const dotSpacing = 0.3; // Spacing between multiple dots (0-1)
+  const numDots = 3; // Number of dots per line segment
+
+  // Draw animated dots for each line segment
+  for (let i = 0; i < selectedCells.length - 1; i++) {
+    const cellNum1 = selectedCells[i];
+    const cellNum2 = selectedCells[i + 1];
+
+    // Convert cell number to grid coordinates
+    const col1 = cellNum1 % cols;
+    const row1 = Math.floor(cellNum1 / cols);
+    const col2 = cellNum2 % cols;
+    const row2 = Math.floor(cellNum2 / cols);
+
+    // Calculate circle positions (bottom-right corner of each cell)
+    const x1 = (col1 + 1) * cellW;
+    const y1 = (row1 + 1) * cellH;
+    const x2 = (col2 + 1) * cellW;
+    const y2 = (row2 + 1) * cellH;
+
+    // Calculate line length for spacing
+    const lineLength = distance(x1, y1, x2, y2);
+    const segmentLength = lineLength * dotSpacing;
+
+    // Draw multiple dots along the line
+    for (let dotIndex = 0; dotIndex < numDots; dotIndex++) {
+      // Calculate position along the line with animation
+      // Each dot starts at a different offset to create spacing
+      const baseOffset = (dotIndex * dotSpacing) % 1;
+      const animatedOffset = (frameCount * dotSpeed + baseOffset) % 1;
+
+      // Interpolate position along the line
+      const dotX = lerp(x1, x2, animatedOffset);
+      const dotY = lerp(y1, y2, animatedOffset);
+
+      // Draw the animated dot
+      const dotSize = 3;
+      circle(dotX, dotY, dotSize);
+    }
+  }
+
+  pop();
 }
 
 function mousePressed() {
