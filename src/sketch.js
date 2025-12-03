@@ -413,6 +413,8 @@ function drawGradientLine(x1, y1, x2, y2, color1, color2) {
   // Number of segments for smooth gradient
   const segments = 50;
 
+  // Draw thick gradient line
+  strokeWeight(4);
   for (let i = 0; i < segments; i++) {
     const t1 = i / segments;
     const t2 = (i + 1) / segments;
@@ -432,6 +434,11 @@ function drawGradientLine(x1, y1, x2, y2, color1, color2) {
     stroke(r, g, b);
     line(px1, py1, px2, py2);
   }
+
+  // Draw thin black line on top
+  strokeWeight(1);
+  stroke(0);
+  line(x1, y1, x2, y2);
 }
 
 function drawAnimatedDots(cols, rows, cellW, cellH) {
