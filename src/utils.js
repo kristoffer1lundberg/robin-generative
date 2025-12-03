@@ -14,6 +14,20 @@ function mapRange(value, inMin, inMax, outMin, outMax) {
 }
 
 /**
+ * Draws a crosshair at the specified position using two lines (horizontal and vertical).
+ * @param {number} x - X coordinate of the crosshair center
+ * @param {number} y - Y coordinate of the crosshair center
+ * @param {number} size - Length of each line (total size of the crosshair)
+ */
+function drawCrosshair(x, y, size) {
+  const half = size / 2;
+  // Draw horizontal line
+  line(x - half, y, x + half, y);
+  // Draw vertical line
+  line(x, y - half, x, y + half);
+}
+
+/**
  * Clamps a value between min and max
  * @param {number} value - Value to clamp
  * @param {number} min - Minimum value
@@ -56,4 +70,3 @@ function randomRange(min, max) {
 function lerp(start, end, t) {
   return start + (end - start) * t;
 }
-
