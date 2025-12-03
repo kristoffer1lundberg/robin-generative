@@ -9,7 +9,7 @@ const guiParams = {
   showCircle: true,
   crosshairOpacityMin: 0.3,
   crosshairOpacityMax: 1.0,
-  crosshairAnimationSpeed: 4.0,
+  crosshairAnimationSpeed: 5.0,
   crosshairSpeedVariation: 0.3,
 };
 

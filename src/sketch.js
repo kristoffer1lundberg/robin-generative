@@ -63,7 +63,6 @@ function draw() {
   push();
   strokeWeight(1);
 
-  // Animate opacity between min and max values
   const opacityMin = guiParams.crosshairOpacityMin;
   const opacityMax = guiParams.crosshairOpacityMax;
   const animationSpeed = guiParams.crosshairAnimationSpeed;
@@ -71,14 +70,11 @@ function draw() {
 
   for (let i = 0; i < cols; i++) {
     for (let j = 0; j < rows; j++) {
-      // Bottom-right corner of cell in grid coordinates
       let crossX = (i + 1) * cellW;
       let crossY = (j + 1) * cellH;
+
       if (i < cols - 1 && j < rows - 1) {
-        // Create a deterministic but varied speed multiplier for each crosshair
-        // Using a simple hash function based on position to get consistent variation
         const hash = (((i * 73856093) ^ (j * 19349663)) % 1000) / 1000;
-        // Map hash to speed multiplier range (e.g., 0.7 to 1.3 for 30% variation)
         const speedMultiplier = mapRange(
           hash,
           0,
@@ -88,7 +84,6 @@ function draw() {
         );
         const individualSpeed = animationSpeed * speedMultiplier;
 
-        // Use sine wave to create smooth oscillation between opacity range
         const opacity = mapRange(
           sin(frameCount * individualSpeed * 0.01),
           -1,
@@ -104,7 +99,7 @@ function draw() {
   }
   pop();
 
-  // Draw border rectangle around the grid
+  // Canvas Border
   push();
   stroke(BORDER_COLOR_STRONG);
   strokeWeight(0.5);
