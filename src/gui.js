@@ -11,6 +11,11 @@ const guiParams = {
   crosshairOpacityMax: 1.0,
   crosshairAnimationSpeed: 5.0,
   crosshairSpeedVariation: 0.3,
+  showGrid: true,
+  showCrosshairs: true,
+  showUnconnectedParticles: true,
+  showConnectedParticles: true,
+  showActiveDots: true,
 };
 
 // UI elements
@@ -24,6 +29,11 @@ let crosshairOpacityMinLabel,
   crosshairOpacityMaxLabel,
   crosshairSpeedLabel,
   crosshairSpeedVariationLabel;
+let showGridCheckbox,
+  showCrosshairsCheckbox,
+  showUnconnectedParticlesCheckbox,
+  showConnectedParticlesCheckbox,
+  showActiveDotsCheckbox;
 
 function setupGUI() {
   // Create a container for UI controls
@@ -162,6 +172,39 @@ function setupGUI() {
       `Crosshair Speed Variation (${crosshairSpeedVariationSlider.value()}%)`
     );
   });
+
+  // Create toggle checkboxes
+  showGridCheckbox = createCheckbox("Show Grid", guiParams.showGrid);
+  showGridCheckbox.parent(controlsDiv);
+  showGridCheckbox.class("gui-checkbox");
+
+  showCrosshairsCheckbox = createCheckbox(
+    "Show Crosshairs",
+    guiParams.showCrosshairs
+  );
+  showCrosshairsCheckbox.parent(controlsDiv);
+  showCrosshairsCheckbox.class("gui-checkbox");
+
+  showUnconnectedParticlesCheckbox = createCheckbox(
+    "Show Unconnected Particles",
+    guiParams.showUnconnectedParticles
+  );
+  showUnconnectedParticlesCheckbox.parent(controlsDiv);
+  showUnconnectedParticlesCheckbox.class("gui-checkbox");
+
+  showConnectedParticlesCheckbox = createCheckbox(
+    "Show Connected Particles",
+    guiParams.showConnectedParticles
+  );
+  showConnectedParticlesCheckbox.parent(controlsDiv);
+  showConnectedParticlesCheckbox.class("gui-checkbox");
+
+  showActiveDotsCheckbox = createCheckbox(
+    "Show Active Dots",
+    guiParams.showActiveDots
+  );
+  showActiveDotsCheckbox.parent(controlsDiv);
+  showActiveDotsCheckbox.class("gui-checkbox");
 }
 
 function updateGUIParams() {
@@ -175,4 +218,10 @@ function updateGUIParams() {
   guiParams.crosshairAnimationSpeed = crosshairSpeedSlider.value();
   guiParams.crosshairSpeedVariation =
     crosshairSpeedVariationSlider.value() / 100;
+  guiParams.showGrid = showGridCheckbox.checked();
+  guiParams.showCrosshairs = showCrosshairsCheckbox.checked();
+  guiParams.showUnconnectedParticles =
+    showUnconnectedParticlesCheckbox.checked();
+  guiParams.showConnectedParticles = showConnectedParticlesCheckbox.checked();
+  guiParams.showActiveDots = showActiveDotsCheckbox.checked();
 }

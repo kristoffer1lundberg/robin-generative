@@ -319,56 +319,60 @@ function draw() {
   pop();
 
   // Then, draw all grid cell borders
-  stroke(BORDER_COLOR_WEAK);
-  noFill();
-  for (let i = 0; i < cols; i++) {
-    for (let j = 0; j < rows; j++) {
-      // Cell center in grid coordinates
-      let x = cellW / 2 + i * cellW;
-      let y = cellH / 2 + j * cellH;
-      rect(x, y, cellW, cellH);
+  if (guiParams.showGrid) {
+    stroke(BORDER_COLOR_WEAK);
+    noFill();
+    for (let i = 0; i < cols; i++) {
+      for (let j = 0; j < rows; j++) {
+        // Cell center in grid coordinates
+        let x = cellW / 2 + i * cellW;
+        let y = cellH / 2 + j * cellH;
+        rect(x, y, cellW, cellH);
+      }
     }
   }
 
   // Then, draw all crosshairs on top
-  push();
-  strokeWeight(1);
+  if (guiParams.showCrosshairs) {
+    push();
+    strokeWeight(1);
 
-  const opacityMin = guiParams.crosshairOpacityMin;
-  const opacityMax = guiParams.crosshairOpacityMax;
-  const animationSpeed = guiParams.crosshairAnimationSpeed;
-  const speedVariation = guiParams.crosshairSpeedVariation;
+    const opacityMin = guiParams.crosshairOpacityMin;
+    const opacityMax = guiParams.crosshairOpacityMax;
+    const animationSpeed = guiParams.crosshairAnimationSpeed;
+    const speedVariation = guiParams.crosshairSpeedVariation;
 
-  for (let i = 0; i < cols; i++) {
-    for (let j = 0; j < rows; j++) {
-      let crossX = (i + 1) * cellW;
-      let crossY = (j + 1) * cellH;
+    for (let i = 0; i < cols; i++) {
+      for (let j = 0; j < rows; j++) {
+        let crossX = (i + 1) * cellW;
+        let crossY = (j + 1) * cellH;
 
-      if (i < cols - 1 && j < rows - 1) {
-        const hash = (((i * 73856093) ^ (j * 19349663)) % 1000) / 1000;
-        const speedMultiplier = mapRange(
-          hash,
-          0,
-          1,
-          1 - speedVariation,
-          1 + speedVariation
-        );
-        const individualSpeed = animationSpeed * speedMultiplier;
+        if (i < cols - 1 && j < rows - 1) {
+          const hash = (((i * 73856093) ^ (j * 19349663)) % 1000) / 1000;
+          const speedMultiplier = mapRange(
+            hash,
+            0,
+            1,
+            1 - speedVariation,
+            1 + speedVariation
+          );
+          const individualSpeed = animationSpeed * speedMultiplier;
 
-        const opacity = mapRange(
-          sin(frameCount * individualSpeed * 0.01),
-          -1,
-          1,
-          opacityMin,
-          opacityMax
-        );
+          const opacity = mapRange(
+            sin(frameCount * individualSpeed * 0.01),
+            -1,
+            1,
+            opacityMin,
+            opacityMax
+          );
 
-        stroke(BORDER_COLOR_MEDIUM, opacity * 255);
-        drawCrosshair(crossX, crossY, cellSize * 0.2);
+          stroke(BORDER_COLOR_MEDIUM, opacity * 255);
+          drawCrosshair(crossX, crossY, cellSize * 0.2);
+        }
       }
     }
+    pop();
   }
-  pop();
 
   // Canvas Border
   push();
@@ -379,7 +383,9 @@ function draw() {
   pop();
 
   // Draw lines connecting selected cells sequentially (draw first so circles appear on top)
-  drawSelectedCellLines(cols, rows, cellW, cellH);
+  if (guiParams.showActiveDots) {
+    drawSelectedCellLines(cols, rows, cellW, cellH);
+  }
 
   // Draw particles (already updated earlier)
   drawParticles();
@@ -528,56 +534,60 @@ function drawCellHoverCircles(cols, rows, cellW, cellH) {
         // Calculate animated radius
         const animatedRadius = circleRadius * cellHoverAnimations[cellNumber];
 
-        // Draw animated glow if selected
-        if (isSelected) {
+        // Draw animated glow if selected and active dots are enabled
+        if (isSelected && guiParams.showActiveDots) {
           drawAnimatedGlow(circleX, circleY, circleRadius, i, j, cellNumber);
         }
 
-        // Draw hover circle
-        push();
-        if (isSelected) {
-          // Find which set this cell belongs to
-          let setIndex = -1;
-          for (let i = 0; i < selectedCells.length; i++) {
-            if (selectedCells[i].includes(cellNumber)) {
-              setIndex = i;
-              break;
+        // Draw hover circle (always show hover, but only show selected dots if toggle is on)
+        if (!isSelected || guiParams.showActiveDots) {
+          push();
+          if (isSelected) {
+            // Find which set this cell belongs to
+            let setIndex = -1;
+            for (let i = 0; i < selectedCells.length; i++) {
+              if (selectedCells[i].includes(cellNumber)) {
+                setIndex = i;
+                break;
+              }
             }
+            const cellColor = getCellColor(cellNumber, setIndex);
+            strokeWeight(2);
+            stroke(cellColor[0], cellColor[1], cellColor[2]);
+            fill(0);
+          } else {
+            stroke(255, 255, 255);
+            fill(BG_COLOR);
           }
-          const cellColor = getCellColor(cellNumber, setIndex);
-          strokeWeight(2);
-          stroke(cellColor[0], cellColor[1], cellColor[2]);
-          fill(0);
-        } else {
-          stroke(255, 255, 255);
-          fill(BG_COLOR);
+          circle(circleX, circleY, animatedRadius * 2);
+          pop();
         }
-        circle(circleX, circleY, animatedRadius * 2);
-        pop();
       } else {
-        // If selected, keep circle visible at full size
+        // If selected, keep circle visible at full size (if active dots are enabled)
         if (isSelected) {
           cellHoverAnimations[cellNumber] = 1;
 
           // Draw animated glow behind selected circle
-          drawAnimatedGlow(circleX, circleY, circleRadius, i, j, cellNumber);
+          if (guiParams.showActiveDots) {
+            drawAnimatedGlow(circleX, circleY, circleRadius, i, j, cellNumber);
 
-          // Draw selected circle
-          push();
-          // Find which set this cell belongs to
-          let setIndex = -1;
-          for (let i = 0; i < selectedCells.length; i++) {
-            if (selectedCells[i].includes(cellNumber)) {
-              setIndex = i;
-              break;
+            // Draw selected circle
+            push();
+            // Find which set this cell belongs to
+            let setIndex = -1;
+            for (let i = 0; i < selectedCells.length; i++) {
+              if (selectedCells[i].includes(cellNumber)) {
+                setIndex = i;
+                break;
+              }
             }
+            const cellColor = getCellColor(cellNumber, setIndex);
+            strokeWeight(2);
+            stroke(cellColor[0], cellColor[1], cellColor[2]);
+            fill(0);
+            circle(circleX, circleY, circleRadius * 2);
+            pop();
           }
-          const cellColor = getCellColor(cellNumber, setIndex);
-          strokeWeight(2);
-          stroke(cellColor[0], cellColor[1], cellColor[2]);
-          fill(0);
-          circle(circleX, circleY, circleRadius * 2);
-          pop();
         } else {
           // If not hovering and not selected, animate back to 0
           if (cellHoverAnimations[cellNumber] !== undefined) {
@@ -808,9 +818,16 @@ function updateParticles(cols, rows, cellW, cellH) {
 }
 
 function drawParticles() {
-  // Draw all particles
+  // Draw particles based on toggle settings
   for (let particle of particles) {
-    particle.draw();
+    const isConnected = particle.connectedDot !== null;
+
+    // Only draw if the appropriate toggle is enabled
+    if (isConnected && guiParams.showConnectedParticles) {
+      particle.draw();
+    } else if (!isConnected && guiParams.showUnconnectedParticles) {
+      particle.draw();
+    }
   }
 }
 
