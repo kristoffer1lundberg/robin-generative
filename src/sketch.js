@@ -113,11 +113,11 @@ function draw() {
   rect(0, 0, gridW, gridH);
   pop();
 
-  // Draw hover circles and handle interactions
-  drawCellHoverCircles(cols, rows, cellW, cellH);
-
-  // Draw lines connecting selected cells sequentially
+  // Draw lines connecting selected cells sequentially (draw first so circles appear on top)
   drawSelectedCellLines(cols, rows, cellW, cellH);
+
+  // Draw hover circles and handle interactions (draw last so they appear on top of lines)
+  drawCellHoverCircles(cols, rows, cellW, cellH);
 
   pop(); // End grid coordinate system
 
