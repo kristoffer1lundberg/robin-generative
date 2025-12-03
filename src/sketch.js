@@ -14,6 +14,9 @@ let cellHoverAnimations = {};
 // Track particle animation state for each cell (for lighting up cells with particles)
 let cellParticleAnimations = {};
 
+// Store random color for each cell
+let cellColors = {};
+
 // Particle system
 let particles = [];
 const PARTICLE_LIFETIME = 20000; // 20 seconds in milliseconds
@@ -50,31 +53,15 @@ function getCellNumberFromPosition(x, y, cols, rows, cellW, cellH) {
   return row * cols + col;
 }
 
-// Get color for a cell based on its index within its set
+// Get color for a cell - uses stored random color if available
 function getCellColor(cellNumber, setIndex) {
-  if (setIndex === undefined) {
-    // Find which set contains this cell
-    for (let i = 0; i < selectedCells.length; i++) {
-      if (selectedCells[i].includes(cellNumber)) {
-        setIndex = i;
-        break;
-      }
-    }
-    if (setIndex === undefined) {
-      return [255, 255, 255]; // Default white if not selected
-    }
+  // Check if cell has a stored color
+  if (cellNumber in cellColors) {
+    return cellColors[cellNumber];
   }
 
-  // Find the index of this cell within its set
-  const currentSet = selectedCells[setIndex];
-  const indexInSet = currentSet.indexOf(cellNumber);
-
-  if (indexInSet === -1) {
-    return [255, 255, 255]; // Default white if not found
-  }
-
-  // Use the index within the set to determine color (each dot gets its own color)
-  return DOT_COLORS[indexInSet % DOT_COLORS.length];
+  // Default white if no color stored
+  return [255, 255, 255];
 }
 
 // Particle class
@@ -797,6 +784,8 @@ function mousePressed() {
       currentSetIndex = selectedCells.length - 1;
       // Set animation state to full when selected
       cellHoverAnimations[cellNum] = 1;
+      // Assign random color to the cell
+      cellColors[cellNum] = DOT_COLORS[Math.floor(random(DOT_COLORS.length))];
     } else {
       // Regular click: Add/remove from current set
       const currentSet = selectedCells[currentSetIndex];
@@ -808,6 +797,10 @@ function mousePressed() {
         // Reset animation state when deselected
         if (cellHoverAnimations[cellNum] !== undefined) {
           cellHoverAnimations[cellNum] = 0;
+        }
+        // Clear color if cell is not in any set anymore
+        if (!selectedCells.some((set) => set.includes(cellNum))) {
+          delete cellColors[cellNum];
         }
       } else {
         // Check if cell is in any other set - if so, remove it first
@@ -821,6 +814,8 @@ function mousePressed() {
                 if (cellHoverAnimations[cellNum] !== undefined) {
                   cellHoverAnimations[cellNum] = 0;
                 }
+                // Clear color if cell is not in any set anymore
+                delete cellColors[cellNum];
               }
             }
           }
@@ -829,6 +824,11 @@ function mousePressed() {
         currentSet.push(cellNum);
         // Set animation state to full when selected
         cellHoverAnimations[cellNum] = 1;
+        // Assign random color to the cell if it doesn't have one
+        if (!(cellNum in cellColors)) {
+          cellColors[cellNum] =
+            DOT_COLORS[Math.floor(random(DOT_COLORS.length))];
+        }
       }
     }
 
