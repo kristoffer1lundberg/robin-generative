@@ -4,8 +4,9 @@ const BORDER_COLOR_WEAK = 40;
 const BORDER_COLOR_MEDIUM = 80;
 const BORDER_COLOR_STRONG = 100;
 
-// Array to store selected cell numbers
-let selectedCells = [];
+// Two-dimensional array to store selected cell numbers (each sub-array is an independent set)
+let selectedCells = [[]]; // Start with one empty set
+let currentSetIndex = 0; // Index of the current set being edited
 
 // Track hover animation state for each cell
 let cellHoverAnimations = {};
@@ -31,13 +32,31 @@ const DOT_COLORS = [
   [100, 200, 255], // Light Blue
 ];
 
-// Get color for a cell based on its index in selectedCells
-function getCellColor(cellNumber) {
-  const index = selectedCells.indexOf(cellNumber);
-  if (index === -1) {
-    return [255, 255, 255]; // Default white if not selected
+// Get color for a cell based on its index within its set
+function getCellColor(cellNumber, setIndex) {
+  if (setIndex === undefined) {
+    // Find which set contains this cell
+    for (let i = 0; i < selectedCells.length; i++) {
+      if (selectedCells[i].includes(cellNumber)) {
+        setIndex = i;
+        break;
+      }
+    }
+    if (setIndex === undefined) {
+      return [255, 255, 255]; // Default white if not selected
+    }
   }
-  return DOT_COLORS[index % DOT_COLORS.length];
+
+  // Find the index of this cell within its set
+  const currentSet = selectedCells[setIndex];
+  const indexInSet = currentSet.indexOf(cellNumber);
+
+  if (indexInSet === -1) {
+    return [255, 255, 255]; // Default white if not found
+  }
+
+  // Use the index within the set to determine color (each dot gets its own color)
+  return DOT_COLORS[indexInSet % DOT_COLORS.length];
 }
 
 // Particle class
@@ -100,7 +119,7 @@ class Particle {
         ) {
           // New connection - update color and assign random orbit radius
           this.connectedDot = closestDot;
-          this.color = getCellColor(closestDot.cellNumber);
+          this.color = getCellColor(closestDot.cellNumber, closestDot.setIndex);
           // Random orbit radius between 70% and 130% of base radius
           this.orbitRadius = random(
             PARTICLE_ORBIT_RADIUS * 0.7,
@@ -136,12 +155,15 @@ class Particle {
 
   getActiveDots(cols, rows, cellW, cellH) {
     const dots = [];
-    for (let cellNumber of selectedCells) {
-      const col = cellNumber % cols;
-      const row = Math.floor(cellNumber / cols);
-      const x = (col + 1) * cellW;
-      const y = (row + 1) * cellH;
-      dots.push({ x, y, cellNumber });
+    // Get dots from all sets
+    for (let setIndex = 0; setIndex < selectedCells.length; setIndex++) {
+      for (let cellNumber of selectedCells[setIndex]) {
+        const col = cellNumber % cols;
+        const row = Math.floor(cellNumber / cols);
+        const x = (col + 1) * cellW;
+        const y = (row + 1) * cellH;
+        dots.push({ x, y, cellNumber, setIndex });
+      }
     }
     return dots;
   }
@@ -151,8 +173,10 @@ class Particle {
     noStroke();
     // Opacity based on z value (higher z = more opaque, more drastic range)
     const opacity = mapRange(this.z, 0, 1, 20, 255);
+    // Size based on z value (higher z = larger particles)
+    const size = mapRange(this.z, 0, 1, 1.5, 4);
     fill(this.color[0], this.color[1], this.color[2], opacity);
-    circle(this.x, this.y, 3);
+    circle(this.x, this.y, size);
     pop();
   }
 }
@@ -322,8 +346,15 @@ function drawAnimatedGlow(x, y, baseRadius, col, row, cellNumber) {
     mapRange(particleHash, 0, 1, minParticles, maxParticles + 1)
   );
 
-  // Get cell color
-  const cellColor = getCellColor(cellNumber);
+  // Get cell color - find set index if not provided
+  let setIndex = undefined;
+  for (let i = 0; i < selectedCells.length; i++) {
+    if (selectedCells[i].includes(cellNumber)) {
+      setIndex = i;
+      break;
+    }
+  }
+  const cellColor = getCellColor(cellNumber, setIndex);
 
   const particleSize = 2;
 
@@ -375,8 +406,8 @@ function drawCellHoverCircles(cols, rows, cellW, cellH) {
       // Calculate cell number (row-major order: row * cols + col)
       const cellNumber = j * cols + i;
 
-      // Check if this cell is selected
-      const isSelected = selectedCells.includes(cellNumber);
+      // Check if this cell is selected in any set
+      const isSelected = selectedCells.some((set) => set.includes(cellNumber));
 
       // Check if mouse is hovering over the circle
       const distToCircle = distance(mouseGridX, mouseGridY, circleX, circleY);
@@ -412,7 +443,15 @@ function drawCellHoverCircles(cols, rows, cellW, cellH) {
         // Draw hover circle
         push();
         if (isSelected) {
-          const cellColor = getCellColor(cellNumber);
+          // Find which set this cell belongs to
+          let setIndex = -1;
+          for (let i = 0; i < selectedCells.length; i++) {
+            if (selectedCells[i].includes(cellNumber)) {
+              setIndex = i;
+              break;
+            }
+          }
+          const cellColor = getCellColor(cellNumber, setIndex);
           strokeWeight(2);
           stroke(cellColor[0], cellColor[1], cellColor[2]);
           fill(0);
@@ -432,7 +471,15 @@ function drawCellHoverCircles(cols, rows, cellW, cellH) {
 
           // Draw selected circle
           push();
-          const cellColor = getCellColor(cellNumber);
+          // Find which set this cell belongs to
+          let setIndex = -1;
+          for (let i = 0; i < selectedCells.length; i++) {
+            if (selectedCells[i].includes(cellNumber)) {
+              setIndex = i;
+              break;
+            }
+          }
+          const cellColor = getCellColor(cellNumber, setIndex);
           strokeWeight(2);
           stroke(cellColor[0], cellColor[1], cellColor[2]);
           fill(0);
@@ -469,38 +516,43 @@ function drawCellHoverCircles(cols, rows, cellW, cellH) {
 }
 
 function drawSelectedCellLines(cols, rows, cellW, cellH) {
-  // Only draw lines if there are at least 2 selected cells
-  if (selectedCells.length < 2) {
-    return;
-  }
-
   push();
   strokeWeight(1);
   noFill();
 
-  // Draw lines connecting selected cells sequentially with gradients
-  for (let i = 0; i < selectedCells.length - 1; i++) {
-    const cellNum1 = selectedCells[i];
-    const cellNum2 = selectedCells[i + 1];
+  // Draw lines for each set independently
+  for (let setIndex = 0; setIndex < selectedCells.length; setIndex++) {
+    const currentSet = selectedCells[setIndex];
 
-    // Get colors for both cells
-    const color1 = getCellColor(cellNum1);
-    const color2 = getCellColor(cellNum2);
+    // Only draw lines if there are at least 2 cells in this set
+    if (currentSet.length < 2) {
+      continue;
+    }
 
-    // Convert cell number to grid coordinates
-    const col1 = cellNum1 % cols;
-    const row1 = Math.floor(cellNum1 / cols);
-    const col2 = cellNum2 % cols;
-    const row2 = Math.floor(cellNum2 / cols);
+    // Draw lines connecting selected cells sequentially with gradients within this set
+    for (let i = 0; i < currentSet.length - 1; i++) {
+      const cellNum1 = currentSet[i];
+      const cellNum2 = currentSet[i + 1];
 
-    // Calculate circle positions (bottom-right corner of each cell)
-    const x1 = (col1 + 1) * cellW;
-    const y1 = (row1 + 1) * cellH;
-    const x2 = (col2 + 1) * cellW;
-    const y2 = (row2 + 1) * cellH;
+      // Get colors for both cells (using set index)
+      const color1 = getCellColor(cellNum1, setIndex);
+      const color2 = getCellColor(cellNum2, setIndex);
 
-    // Draw gradient line by drawing multiple segments
-    drawGradientLine(x1, y1, x2, y2, color1, color2);
+      // Convert cell number to grid coordinates
+      const col1 = cellNum1 % cols;
+      const row1 = Math.floor(cellNum1 / cols);
+      const col2 = cellNum2 % cols;
+      const row2 = Math.floor(cellNum2 / cols);
+
+      // Calculate circle positions (bottom-right corner of each cell)
+      const x1 = (col1 + 1) * cellW;
+      const y1 = (row1 + 1) * cellH;
+      const x2 = (col2 + 1) * cellW;
+      const y2 = (row2 + 1) * cellH;
+
+      // Draw gradient line by drawing multiple segments
+      drawGradientLine(x1, y1, x2, y2, color1, color2);
+    }
   }
 
   pop();
@@ -542,11 +594,6 @@ function drawGradientLine(x1, y1, x2, y2, color1, color2) {
 }
 
 function drawAnimatedDots(cols, rows, cellW, cellH) {
-  // Only draw animated dots if there are at least 2 selected cells
-  if (selectedCells.length < 2) {
-    return;
-  }
-
   push();
   noStroke();
 
@@ -554,51 +601,61 @@ function drawAnimatedDots(cols, rows, cellW, cellH) {
   const dotSpacing = 0.3; // Spacing between multiple dots (0-1)
   const numDots = 3; // Number of dots per line segment
 
-  // Draw animated dots for each line segment
-  for (let i = 0; i < selectedCells.length - 1; i++) {
-    const cellNum1 = selectedCells[i];
-    const cellNum2 = selectedCells[i + 1];
+  // Draw animated dots for each set independently
+  for (let setIndex = 0; setIndex < selectedCells.length; setIndex++) {
+    const currentSet = selectedCells[setIndex];
 
-    // Get colors for both cells
-    const color1 = getCellColor(cellNum1);
-    const color2 = getCellColor(cellNum2);
+    // Only draw dots if there are at least 2 cells in this set
+    if (currentSet.length < 2) {
+      continue;
+    }
 
-    // Convert cell number to grid coordinates
-    const col1 = cellNum1 % cols;
-    const row1 = Math.floor(cellNum1 / cols);
-    const col2 = cellNum2 % cols;
-    const row2 = Math.floor(cellNum2 / cols);
+    // Draw animated dots for each line segment in this set
+    for (let i = 0; i < currentSet.length - 1; i++) {
+      const cellNum1 = currentSet[i];
+      const cellNum2 = currentSet[i + 1];
 
-    // Calculate circle positions (bottom-right corner of each cell)
-    const x1 = (col1 + 1) * cellW;
-    const y1 = (row1 + 1) * cellH;
-    const x2 = (col2 + 1) * cellW;
-    const y2 = (row2 + 1) * cellH;
+      // Get colors for both cells (using set index)
+      const color1 = getCellColor(cellNum1, setIndex);
+      const color2 = getCellColor(cellNum2, setIndex);
 
-    // Calculate line length for spacing
-    const lineLength = distance(x1, y1, x2, y2);
-    const segmentLength = lineLength * dotSpacing;
+      // Convert cell number to grid coordinates
+      const col1 = cellNum1 % cols;
+      const row1 = Math.floor(cellNum1 / cols);
+      const col2 = cellNum2 % cols;
+      const row2 = Math.floor(cellNum2 / cols);
 
-    // Draw multiple dots along the line
-    for (let dotIndex = 0; dotIndex < numDots; dotIndex++) {
-      // Calculate position along the line with animation
-      // Each dot starts at a different offset to create spacing
-      const baseOffset = (dotIndex * dotSpacing) % 1;
-      const animatedOffset = (frameCount * dotSpeed + baseOffset) % 1;
+      // Calculate circle positions (bottom-right corner of each cell)
+      const x1 = (col1 + 1) * cellW;
+      const y1 = (row1 + 1) * cellH;
+      const x2 = (col2 + 1) * cellW;
+      const y2 = (row2 + 1) * cellH;
 
-      // Interpolate position along the line
-      const dotX = lerp(x1, x2, animatedOffset);
-      const dotY = lerp(y1, y2, animatedOffset);
+      // Calculate line length for spacing
+      const lineLength = distance(x1, y1, x2, y2);
+      const segmentLength = lineLength * dotSpacing;
 
-      // Interpolate color based on position along the line
-      const r = lerp(color1[0], color2[0], animatedOffset);
-      const g = lerp(color1[1], color2[1], animatedOffset);
-      const b = lerp(color1[2], color2[2], animatedOffset);
+      // Draw multiple dots along the line
+      for (let dotIndex = 0; dotIndex < numDots; dotIndex++) {
+        // Calculate position along the line with animation
+        // Each dot starts at a different offset to create spacing
+        const baseOffset = (dotIndex * dotSpacing) % 1;
+        const animatedOffset = (frameCount * dotSpeed + baseOffset) % 1;
 
-      // Draw the animated dot with gradient color
-      fill(r, g, b);
-      const dotSize = 3;
-      circle(dotX, dotY, dotSize);
+        // Interpolate position along the line
+        const dotX = lerp(x1, x2, animatedOffset);
+        const dotY = lerp(y1, y2, animatedOffset);
+
+        // Interpolate color based on position along the line
+        const r = lerp(color1[0], color2[0], animatedOffset);
+        const g = lerp(color1[1], color2[1], animatedOffset);
+        const b = lerp(color1[2], color2[2], animatedOffset);
+
+        // Draw the animated dot with gradient color
+        fill(r, g, b);
+        const dotSize = 3;
+        circle(dotX, dotY, dotSize);
+      }
     }
   }
 
@@ -639,22 +696,51 @@ function mousePressed() {
     window.hoveredCellNumber !== undefined
   ) {
     const cellNum = window.hoveredCellNumber;
+    const isShiftPressed = keyIsDown(SHIFT);
 
-    // Toggle cell in array (add if not present, remove if present)
-    const index = selectedCells.indexOf(cellNum);
-    if (index > -1) {
-      selectedCells.splice(index, 1);
-      // Reset animation state when deselected
-      if (cellHoverAnimations[cellNum] !== undefined) {
-        cellHoverAnimations[cellNum] = 0;
-      }
-    } else {
-      selectedCells.push(cellNum);
+    if (isShiftPressed) {
+      // Shift+click: Create a new set
+      selectedCells.push([cellNum]);
+      currentSetIndex = selectedCells.length - 1;
       // Set animation state to full when selected
       cellHoverAnimations[cellNum] = 1;
+    } else {
+      // Regular click: Add/remove from current set
+      const currentSet = selectedCells[currentSetIndex];
+      const index = currentSet.indexOf(cellNum);
+
+      if (index > -1) {
+        // Remove from current set
+        currentSet.splice(index, 1);
+        // Reset animation state when deselected
+        if (cellHoverAnimations[cellNum] !== undefined) {
+          cellHoverAnimations[cellNum] = 0;
+        }
+      } else {
+        // Check if cell is in any other set - if so, remove it first
+        for (let i = 0; i < selectedCells.length; i++) {
+          if (i !== currentSetIndex) {
+            const otherIndex = selectedCells[i].indexOf(cellNum);
+            if (otherIndex > -1) {
+              selectedCells[i].splice(otherIndex, 1);
+              // Reset animation if this was the only set containing it
+              if (!selectedCells.some((set) => set.includes(cellNum))) {
+                if (cellHoverAnimations[cellNum] !== undefined) {
+                  cellHoverAnimations[cellNum] = 0;
+                }
+              }
+            }
+          }
+        }
+        // Add to current set
+        currentSet.push(cellNum);
+        // Set animation state to full when selected
+        cellHoverAnimations[cellNum] = 1;
+      }
     }
 
     // Log for debugging (you can remove this later)
     console.log("Selected cells:", selectedCells);
+    console.log("Current set index:", currentSetIndex);
   }
 }
