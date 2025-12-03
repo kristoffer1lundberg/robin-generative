@@ -4,6 +4,9 @@ const BORDER_COLOR_WEAK = 40;
 const BORDER_COLOR_MEDIUM = 80;
 const BORDER_COLOR_STRONG = 100;
 
+// Array to store selected cell numbers
+let selectedCells = [];
+
 function setup() {
   let canvas = createCanvas(windowWidth, windowHeight);
   canvas.parent("sketch-container");
@@ -107,6 +110,9 @@ function draw() {
   rect(0, 0, gridW, gridH);
   pop();
 
+  // Draw hover circles and handle interactions
+  drawCellHoverCircles(cols, rows, cellW, cellH);
+
   pop(); // End grid coordinate system
 
   // Use the parameters from the GUI
@@ -114,5 +120,68 @@ function draw() {
   if (guiParams.showCircle) {
     fill(guiParams.red, guiParams.green, guiParams.blue);
     noStroke();
+  }
+}
+
+function drawCellHoverCircles(cols, rows, cellW, cellH) {
+  // Convert mouse position to grid coordinates
+  const gridTopLeftX = width / 2 - (cellW * cols) / 2;
+  const gridTopLeftY = height / 2 - (cellH * rows) / 2;
+
+  const mouseGridX = mouseX - gridTopLeftX;
+  const mouseGridY = mouseY - gridTopLeftY;
+
+  const circleRadius = cellW * 0.15;
+  const hoverThreshold = circleRadius * 1.5; // Slightly larger than circle for easier interaction
+
+  let hoveredCell = null;
+
+  // Draw circles and check for hover
+  for (let i = 0; i < cols; i++) {
+    for (let j = 0; j < rows; j++) {
+      // Bottom right corner of the cell
+      const circleX = (i + 1) * cellW;
+      const circleY = (j + 1) * cellH;
+
+      // Calculate cell number (row-major order: row * cols + col)
+      const cellNumber = j * cols + i;
+
+      // Check if mouse is hovering over the circle
+      const distToCircle = distance(mouseGridX, mouseGridY, circleX, circleY);
+
+      if (distToCircle < hoverThreshold) {
+        hoveredCell = cellNumber;
+
+        // Draw hover circle
+        push();
+        fill(255, 255, 255, 200);
+        noStroke();
+        circle(circleX, circleY, circleRadius * 2);
+        pop();
+      }
+    }
+  }
+
+  // Store hovered cell for click detection
+  window.hoveredCellNumber = hoveredCell;
+}
+
+function mousePressed() {
+  if (
+    window.hoveredCellNumber !== null &&
+    window.hoveredCellNumber !== undefined
+  ) {
+    const cellNum = window.hoveredCellNumber;
+
+    // Toggle cell in array (add if not present, remove if present)
+    const index = selectedCells.indexOf(cellNum);
+    if (index > -1) {
+      selectedCells.splice(index, 1);
+    } else {
+      selectedCells.push(cellNum);
+    }
+
+    // Log for debugging (you can remove this later)
+    console.log("Selected cells:", selectedCells);
   }
 }
