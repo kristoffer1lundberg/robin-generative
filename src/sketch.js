@@ -129,12 +129,34 @@ function draw() {
   }
 }
 
-function drawAnimatedGlow(x, y, baseRadius) {
-  // Animation parameters
-  const glowSpeed = 0.05; // Speed of the glow animation
-  const glowIntensity = sin(frameCount * glowSpeed);
-  const glowOpacity = mapRange(glowIntensity, -1, 1, 0.3, 0.8);
-  const glowSizeMultiplier = mapRange(glowIntensity, -1, 1, 1.5, 2.5);
+function drawAnimatedGlow(x, y, baseRadius, col, row) {
+  // Use hash function similar to crosshairs to generate unique values per cell
+  const hash = (((col * 73856093) ^ (row * 19349663)) % 1000) / 1000;
+
+  // Vary animation speed based on hash (similar to crosshairs)
+  const speedVariation = 0.5; // How much speed can vary (0.5 = 50% variation)
+  const baseSpeed = 0.02;
+  const speedMultiplier = mapRange(
+    hash,
+    0,
+    1,
+    1 - speedVariation,
+    1 + speedVariation
+  );
+  const individualSpeed = baseSpeed * speedMultiplier;
+
+  // Vary size multiplier based on hash (using a different mapping for variety)
+  const sizeHash = (((col * 19349663) ^ (row * 73856093)) % 1000) / 1000;
+  const sizeVariation = 0.4; // How much size can vary
+  const baseSizeMin = 1.1;
+  const baseSizeMax = 2;
+  const sizeMin = baseSizeMin * (1 - sizeVariation);
+  const sizeMax = baseSizeMax * (1 + sizeVariation);
+
+  // Animated values
+  const glowIntensity = sin(frameCount * individualSpeed);
+  const glowOpacity = mapRange(glowIntensity, -1, 1, 0.1, 0.25);
+  const glowSizeMultiplier = mapRange(glowIntensity, -1, 1, sizeMin, sizeMax);
 
   // Draw multiple circles with decreasing opacity to create glow effect
   push();
@@ -142,7 +164,7 @@ function drawAnimatedGlow(x, y, baseRadius) {
 
   // Outer glow layers
   for (let i = 3; i >= 1; i--) {
-    const layerOpacity = glowOpacity * (i / 3) * 0.5;
+    const layerOpacity = glowOpacity * (i / 3) * 0.4;
     const layerSize = baseRadius * glowSizeMultiplier * (1 + i * 0.3);
     fill(255, 255, 255, layerOpacity * 255);
     circle(x, y, layerSize * 2);
@@ -206,7 +228,7 @@ function drawCellHoverCircles(cols, rows, cellW, cellH) {
 
         // Draw animated glow if selected
         if (isSelected) {
-          drawAnimatedGlow(circleX, circleY, circleRadius);
+          drawAnimatedGlow(circleX, circleY, circleRadius, i, j);
         }
 
         // Draw hover circle
@@ -221,7 +243,7 @@ function drawCellHoverCircles(cols, rows, cellW, cellH) {
           cellHoverAnimations[cellNumber] = 1;
 
           // Draw animated glow behind selected circle
-          drawAnimatedGlow(circleX, circleY, circleRadius);
+          drawAnimatedGlow(circleX, circleY, circleRadius, i, j);
 
           // Draw selected circle
           push();
