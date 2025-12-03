@@ -281,7 +281,8 @@ function drawCellHoverCircles(cols, rows, cellW, cellH) {
         // Draw hover circle
         push();
         if (isSelected) {
-          stroke(BORDER_COLOR_MEDIUM);
+          const cellColor = getCellColor(cellNumber);
+          stroke(cellColor[0], cellColor[1], cellColor[2]);
           fill(0);
         } else {
           stroke(255, 255, 255);
@@ -299,7 +300,8 @@ function drawCellHoverCircles(cols, rows, cellW, cellH) {
 
           // Draw selected circle
           push();
-          stroke(BORDER_COLOR_MEDIUM);
+          const cellColor = getCellColor(cellNumber);
+          stroke(cellColor[0], cellColor[1], cellColor[2]);
           fill(0);
           circle(circleX, circleY, circleRadius * 2);
           pop();
