@@ -57,6 +57,15 @@ canvas {
     Ubuntu, Cantarell, sans-serif;
 }
 
+.gui-logo {
+  width: 100%;
+  max-width: 180px;
+  height: auto;
+  margin: 0 auto 20px auto;
+  display: block;
+  filter: brightness(1.1);
+}
+
 .gui-label {
   color: #ffffff;
   font-size: 12px;

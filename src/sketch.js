@@ -19,6 +19,11 @@ function setup() {
   controlsDiv.parent("sketch-container");
   controlsDiv.class("gui-container");
 
+  // Add logo at the top
+  let logo = createImg("/assets/robin_logo_light.svg", "Robin Logo");
+  logo.parent(controlsDiv);
+  logo.class("gui-logo");
+
   // Create label and slider for circle size
   let sizeLabel = createP("Circle Size");
   sizeLabel.parent(controlsDiv);
