@@ -10,6 +10,29 @@ let selectedCells = [];
 // Track hover animation state for each cell
 let cellHoverAnimations = {};
 
+// Color palette for active dots
+const DOT_COLORS = [
+  [255, 100, 100], // Red
+  [100, 255, 100], // Green
+  [100, 100, 255], // Blue
+  [255, 255, 100], // Yellow
+  [255, 100, 255], // Magenta
+  [100, 255, 255], // Cyan
+  [255, 150, 50], // Orange
+  [150, 100, 255], // Purple
+  [255, 200, 100], // Peach
+  [100, 200, 255], // Light Blue
+];
+
+// Get color for a cell based on its index in selectedCells
+function getCellColor(cellNumber) {
+  const index = selectedCells.indexOf(cellNumber);
+  if (index === -1) {
+    return [255, 255, 255]; // Default white if not selected
+  }
+  return DOT_COLORS[index % DOT_COLORS.length];
+}
+
 function setup() {
   let canvas = createCanvas(windowWidth, windowHeight);
   canvas.parent("sketch-container");
@@ -129,7 +152,7 @@ function draw() {
   }
 }
 
-function drawAnimatedGlow(x, y, baseRadius, col, row) {
+function drawAnimatedGlow(x, y, baseRadius, col, row, cellNumber) {
   // Use hash function similar to crosshairs to generate unique values per cell
   const hash = (((col * 73856093) ^ (row * 19349663)) % 1000) / 1000;
 
@@ -158,6 +181,9 @@ function drawAnimatedGlow(x, y, baseRadius, col, row) {
   const glowOpacity = mapRange(glowIntensity, -1, 1, 0.05, 0.15);
   const glowSizeMultiplier = mapRange(glowIntensity, -1, 1, sizeMin, sizeMax);
 
+  // Get cell color
+  const cellColor = getCellColor(cellNumber);
+
   // Draw multiple circles with decreasing opacity to create glow effect
   push();
   noStroke();
@@ -166,7 +192,7 @@ function drawAnimatedGlow(x, y, baseRadius, col, row) {
   for (let i = 3; i >= 1; i--) {
     const layerOpacity = glowOpacity * (i / 3) * 0.3;
     const layerSize = baseRadius * glowSizeMultiplier * (1 + i * 0.3);
-    fill(255, 255, 255, layerOpacity * 255);
+    fill(cellColor[0], cellColor[1], cellColor[2], layerOpacity * 255);
     circle(x, y, layerSize * 2);
   }
 
@@ -228,12 +254,15 @@ function drawCellHoverCircles(cols, rows, cellW, cellH) {
 
         // Draw animated glow if selected
         if (isSelected) {
-          drawAnimatedGlow(circleX, circleY, circleRadius, i, j);
+          drawAnimatedGlow(circleX, circleY, circleRadius, i, j, cellNumber);
         }
 
         // Draw hover circle
         push();
-        stroke(255);
+        const cellColor = isSelected
+          ? getCellColor(cellNumber)
+          : [255, 255, 255];
+        stroke(cellColor[0], cellColor[1], cellColor[2]);
         fill(BG_COLOR);
         circle(circleX, circleY, animatedRadius * 2);
         pop();
@@ -243,11 +272,12 @@ function drawCellHoverCircles(cols, rows, cellW, cellH) {
           cellHoverAnimations[cellNumber] = 1;
 
           // Draw animated glow behind selected circle
-          drawAnimatedGlow(circleX, circleY, circleRadius, i, j);
+          drawAnimatedGlow(circleX, circleY, circleRadius, i, j, cellNumber);
 
           // Draw selected circle
           push();
-          stroke(255);
+          const cellColor = getCellColor(cellNumber);
+          stroke(cellColor[0], cellColor[1], cellColor[2]);
           fill(BG_COLOR);
           circle(circleX, circleY, circleRadius * 2);
           pop();
@@ -288,17 +318,20 @@ function drawSelectedCellLines(cols, rows, cellW, cellH) {
   }
 
   push();
-  stroke(BORDER_COLOR_MEDIUM);
   strokeWeight(1);
   noFill();
 
   // Set dotted line pattern
   drawingContext.setLineDash([4, 4]); // 4px dash, 4px gap
 
-  // Draw lines connecting selected cells sequentially
+  // Draw lines connecting selected cells sequentially with gradients
   for (let i = 0; i < selectedCells.length - 1; i++) {
     const cellNum1 = selectedCells[i];
     const cellNum2 = selectedCells[i + 1];
+
+    // Get colors for both cells
+    const color1 = getCellColor(cellNum1);
+    const color2 = getCellColor(cellNum2);
 
     // Convert cell number to grid coordinates
     const col1 = cellNum1 % cols;
@@ -312,8 +345,8 @@ function drawSelectedCellLines(cols, rows, cellW, cellH) {
     const x2 = (col2 + 1) * cellW;
     const y2 = (row2 + 1) * cellH;
 
-    // Draw line between the two points
-    line(x1, y1, x2, y2);
+    // Draw gradient line by drawing multiple segments
+    drawGradientLine(x1, y1, x2, y2, color1, color2);
   }
 
   // Reset line dash to solid
@@ -325,6 +358,31 @@ function drawSelectedCellLines(cols, rows, cellW, cellH) {
   drawAnimatedDots(cols, rows, cellW, cellH);
 }
 
+function drawGradientLine(x1, y1, x2, y2, color1, color2) {
+  // Number of segments for smooth gradient
+  const segments = 50;
+
+  for (let i = 0; i < segments; i++) {
+    const t1 = i / segments;
+    const t2 = (i + 1) / segments;
+
+    // Interpolate position
+    const px1 = lerp(x1, x2, t1);
+    const py1 = lerp(y1, y2, t1);
+    const px2 = lerp(x1, x2, t2);
+    const py2 = lerp(y1, y2, t2);
+
+    // Interpolate color (use midpoint for segment color)
+    const tMid = (t1 + t2) / 2;
+    const r = lerp(color1[0], color2[0], tMid);
+    const g = lerp(color1[1], color2[1], tMid);
+    const b = lerp(color1[2], color2[2], tMid);
+
+    stroke(r, g, b);
+    line(px1, py1, px2, py2);
+  }
+}
+
 function drawAnimatedDots(cols, rows, cellW, cellH) {
   // Only draw animated dots if there are at least 2 selected cells
   if (selectedCells.length < 2) {
@@ -333,7 +391,6 @@ function drawAnimatedDots(cols, rows, cellW, cellH) {
 
   push();
   noStroke();
-  fill(255);
 
   const dotSpeed = 0.01; // Speed of dot movement (0-1 per frame)
   const dotSpacing = 0.3; // Spacing between multiple dots (0-1)
@@ -343,6 +400,10 @@ function drawAnimatedDots(cols, rows, cellW, cellH) {
   for (let i = 0; i < selectedCells.length - 1; i++) {
     const cellNum1 = selectedCells[i];
     const cellNum2 = selectedCells[i + 1];
+
+    // Get colors for both cells
+    const color1 = getCellColor(cellNum1);
+    const color2 = getCellColor(cellNum2);
 
     // Convert cell number to grid coordinates
     const col1 = cellNum1 % cols;
@@ -371,7 +432,13 @@ function drawAnimatedDots(cols, rows, cellW, cellH) {
       const dotX = lerp(x1, x2, animatedOffset);
       const dotY = lerp(y1, y2, animatedOffset);
 
-      // Draw the animated dot
+      // Interpolate color based on position along the line
+      const r = lerp(color1[0], color2[0], animatedOffset);
+      const g = lerp(color1[1], color2[1], animatedOffset);
+      const b = lerp(color1[2], color2[2], animatedOffset);
+
+      // Draw the animated dot with gradient color
+      fill(r, g, b);
       const dotSize = 3;
       circle(dotX, dotY, dotSize);
     }
