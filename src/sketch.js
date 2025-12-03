@@ -178,7 +178,7 @@ function drawAnimatedGlow(x, y, baseRadius, col, row, cellNumber) {
 
   // Animated values
   const glowIntensity = sin(frameCount * individualSpeed);
-  const glowOpacity = mapRange(glowIntensity, -1, 1, 0.05, 0.15);
+  const glowOpacity = mapRange(glowIntensity, -1, 1, 0.3, 0.55);
   const glowSizeMultiplier = mapRange(glowIntensity, -1, 1, sizeMin, sizeMax);
 
   // Get cell color
@@ -192,7 +192,8 @@ function drawAnimatedGlow(x, y, baseRadius, col, row, cellNumber) {
   for (let i = 3; i >= 1; i--) {
     const layerOpacity = glowOpacity * (i / 3) * 0.3;
     const layerSize = baseRadius * glowSizeMultiplier * (1 + i * 0.3);
-    fill(cellColor[0], cellColor[1], cellColor[2], layerOpacity * 255);
+    noFill();
+    stroke(cellColor[0], cellColor[1], cellColor[2], layerOpacity * 255);
     circle(x, y, layerSize * 2);
   }
 
