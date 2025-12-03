@@ -50,6 +50,7 @@ class Particle {
     this.connectedDot = null; // Reference to the active dot this particle is orbiting
     this.orbitAngle = random(TWO_PI); // Starting angle for orbit
     this.orbitSpeed = random(0.02, 0.05); // Speed of orbit
+    this.orbitRadius = null; // Will be set to a random value when connecting to a dot
     this.color = [255, 255, 255]; // White by default
   }
 
@@ -81,17 +82,20 @@ class Particle {
         this.connectedDot === null ||
         this.connectedDot.cellNumber !== closestDot.cellNumber
       ) {
-        // New connection - update color
+        // New connection - update color and assign random orbit radius
         this.connectedDot = closestDot;
         this.color = getCellColor(closestDot.cellNumber);
+        // Random orbit radius between 70% and 130% of base radius
+        this.orbitRadius = random(
+          PARTICLE_ORBIT_RADIUS * 0.7,
+          PARTICLE_ORBIT_RADIUS * 1.3
+        );
       }
 
       // Orbit around the dot
       this.orbitAngle += this.orbitSpeed;
-      const targetX =
-        closestDot.x + cos(this.orbitAngle) * PARTICLE_ORBIT_RADIUS;
-      const targetY =
-        closestDot.y + sin(this.orbitAngle) * PARTICLE_ORBIT_RADIUS;
+      const targetX = closestDot.x + cos(this.orbitAngle) * this.orbitRadius;
+      const targetY = closestDot.y + sin(this.orbitAngle) * this.orbitRadius;
 
       // Smoothly move towards orbit position
       this.x = lerp(this.x, targetX, 0.1);
@@ -99,6 +103,7 @@ class Particle {
     } else {
       // Particle is falling
       this.connectedDot = null;
+      this.orbitRadius = null; // Reset orbit radius
       this.color = [255, 255, 255]; // Reset to white
       this.y += this.speed;
     }
