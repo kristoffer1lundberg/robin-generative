@@ -49,11 +49,13 @@ class Particle {
     // Calculate fall speed based on z (higher z = faster fall)
     this.speed = mapRange(this.z, 0, 1, 0.5, 2);
     this.birthTime = millis();
+    this.particleId = random(1000000); // Unique ID for this particle
     this.connectedDot = null; // Reference to the active dot this particle is orbiting
     this.orbitAngle = random(TWO_PI); // Starting angle for orbit
     this.orbitSpeed = random(0.02, 0.05); // Speed of orbit
     this.orbitRadius = null; // Will be set to a random value when connecting to a dot
     this.color = [255, 255, 255]; // White by default
+    this.attractionMap = {}; // Map of dot cellNumber -> whether this particle will be attracted
   }
 
   update(cols, rows, cellW, cellH) {
@@ -79,29 +81,18 @@ class Particle {
     }
 
     if (closestDot) {
-      if (closestDot.isRepelling) {
-        // Particle is repelled by this dot
-        // Calculate direction away from dot
-        const dx = this.x - closestDot.x;
-        const dy = this.y - closestDot.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+      // Each dot has a 70% chance to attract a passing particle
+      // Determine this once per particle-dot pair for consistency
+      if (!(closestDot.cellNumber in this.attractionMap)) {
+        // Use hash of particle ID and cell number for deterministic but random-seeming result
+        const hash =
+          ((this.particleId * 73856093) ^ (closestDot.cellNumber * 19349663)) %
+          100;
+        this.attractionMap[closestDot.cellNumber] = hash < 70; // 70% chance
+      }
+      const willAttract = this.attractionMap[closestDot.cellNumber];
 
-        if (dist > 0) {
-          // Normalize direction
-          const dirX = dx / dist;
-          const dirY = dy / dist;
-
-          // Move away from dot (repulsion force)
-          const repulsionStrength = 2;
-          this.x += dirX * repulsionStrength;
-          this.y += dirY * repulsionStrength;
-        }
-
-        // Reset connection state when repelled
-        this.connectedDot = null;
-        this.orbitRadius = null;
-        this.color = [255, 255, 255]; // Reset to white
-      } else {
+      if (willAttract) {
         // Particle is attracted to an active dot
         if (
           this.connectedDot === null ||
@@ -125,6 +116,12 @@ class Particle {
         // Smoothly move towards orbit position
         this.x = lerp(this.x, targetX, 0.1);
         this.y = lerp(this.y, targetY, 0.1);
+      } else {
+        // Particle is not attracted by this dot (30% chance) - continue falling
+        this.connectedDot = null;
+        this.orbitRadius = null;
+        this.color = [255, 255, 255]; // Reset to white
+        this.y += this.speed;
       }
     } else {
       // Particle is falling (not near any dot)
@@ -144,17 +141,9 @@ class Particle {
       const row = Math.floor(cellNumber / cols);
       const x = (col + 1) * cellW;
       const y = (row + 1) * cellH;
-      // Determine if this dot repels (based on cell number, so it's consistent)
-      const isRepelling = this.isRepellingDot(cellNumber);
-      dots.push({ x, y, cellNumber, isRepelling });
+      dots.push({ x, y, cellNumber });
     }
     return dots;
-  }
-
-  isRepellingDot(cellNumber) {
-    // Use cell number to determine if it repels (consistent per dot)
-    // Every other dot repels, or use a hash for more variety
-    return cellNumber % 2 === 1; // Odd cell numbers repel
   }
 
   draw() {
