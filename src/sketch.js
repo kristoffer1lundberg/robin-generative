@@ -392,6 +392,7 @@ function drawCellHoverCircles(cols, rows, cellW, cellH) {
         push();
         if (isSelected) {
           const cellColor = getCellColor(cellNumber);
+          strokeWeight(2);
           stroke(cellColor[0], cellColor[1], cellColor[2]);
           fill(0);
         } else {
@@ -411,6 +412,7 @@ function drawCellHoverCircles(cols, rows, cellW, cellH) {
           // Draw selected circle
           push();
           const cellColor = getCellColor(cellNumber);
+          strokeWeight(2);
           stroke(cellColor[0], cellColor[1], cellColor[2]);
           fill(0);
           circle(circleX, circleY, circleRadius * 2);
@@ -491,7 +493,7 @@ function drawGradientLine(x1, y1, x2, y2, color1, color2) {
   const segments = 50;
 
   // Draw thick gradient line
-  strokeWeight(4);
+  strokeWeight(5);
   for (let i = 0; i < segments; i++) {
     const t1 = i / segments;
     const t2 = (i + 1) / segments;
@@ -513,7 +515,7 @@ function drawGradientLine(x1, y1, x2, y2, color1, color2) {
   }
 
   // Draw thin black line on top
-  strokeWeight(1);
+  strokeWeight(2);
   stroke(0);
   line(x1, y1, x2, y2);
 }
