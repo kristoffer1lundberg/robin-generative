@@ -1,7 +1,13 @@
+const BG_COLOR = 20;
+
+const BORDER_COLOR_WEAK = 40;
+const BORDER_COLOR_MEDIUM = 80;
+const BORDER_COLOR_STRONG = 100;
+
 function setup() {
   let canvas = createCanvas(windowWidth, windowHeight);
   canvas.parent("sketch-container");
-  background(20);
+  background(BG_COLOR);
 
   // Setup GUI controls
   setupGUI();
@@ -42,7 +48,7 @@ function draw() {
   rectMode(CENTER);
 
   // First, draw all grid cells
-  stroke(40);
+  stroke(BORDER_COLOR_WEAK);
   noFill();
   for (let i = 0; i < cols; i++) {
     for (let j = 0; j < rows; j++) {
@@ -55,7 +61,7 @@ function draw() {
 
   // Then, draw all crosshairs on top
   push();
-  stroke(80);
+  stroke(BORDER_COLOR_MEDIUM);
   strokeWeight(1);
   for (let i = 0; i < cols; i++) {
     for (let j = 0; j < rows; j++) {
@@ -71,7 +77,7 @@ function draw() {
 
   // Draw border rectangle around the grid
   push();
-  stroke(120);
+  stroke(BORDER_COLOR_STRONG);
   strokeWeight(0.5);
   rectMode(CORNER);
   rect(0, 0, gridW, gridH);

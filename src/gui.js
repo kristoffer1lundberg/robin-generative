@@ -8,7 +8,7 @@ const guiParams = {
   green: 150,
   blue: 255,
   showCircle: true,
-  speed: 1.0
+  speed: 1.0,
 };
 
 // UI elements
@@ -80,4 +80,3 @@ function updateGUIParams() {
   guiParams.showCircle = showCheckbox.checked();
   guiParams.speed = speedSlider.value();
 }
-
