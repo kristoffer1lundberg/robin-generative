@@ -158,7 +158,7 @@ function drawAnimatedGlow(x, y, baseRadius, col, row, cellNumber) {
 
   // Vary animation speed based on hash (similar to crosshairs)
   const speedVariation = 0.5; // How much speed can vary (0.5 = 50% variation)
-  const baseSpeed = 0.015;
+  const baseSpeed = 0.04;
   const speedMultiplier = mapRange(
     hash,
     0,
@@ -172,15 +172,29 @@ function drawAnimatedGlow(x, y, baseRadius, col, row, cellNumber) {
   const radiusHash = (((col * 19349663) ^ (row * 73856093)) % 1000) / 1000;
   const radiusVariation = 0.3; // How much radius can vary
   const baseOrbitRadius = baseRadius * 1.5;
-  const orbitRadius =
+  const staticOrbitRadius =
     baseOrbitRadius *
     mapRange(radiusHash, 0, 1, 1 - radiusVariation, 1 + radiusVariation);
+
+  // Animate the orbit radius with a pulsing effect
+  const radiusAnimationSpeed = 0.02; // Speed of radius pulsing
+  const radiusPulseAmount = 0.2; // How much the radius can pulse (20% variation)
+  const radiusPulse = sin(frameCount * radiusAnimationSpeed);
+  const animatedOrbitRadius =
+    staticOrbitRadius *
+    mapRange(radiusPulse, -1, 1, 1 - radiusPulseAmount, 1 + radiusPulseAmount);
+
+  // Vary number of particles based on hash (using yet another mapping)
+  const particleHash = (((col * 56473829) ^ (row * 92837465)) % 1000) / 1000;
+  const minParticles = 4;
+  const maxParticles = 8;
+  const numParticles = Math.floor(
+    mapRange(particleHash, 0, 1, minParticles, maxParticles + 1)
+  );
 
   // Get cell color
   const cellColor = getCellColor(cellNumber);
 
-  // Number of particles orbiting
-  const numParticles = 6;
   const particleSize = 2;
 
   push();
@@ -195,9 +209,9 @@ function drawAnimatedGlow(x, y, baseRadius, col, row, cellNumber) {
     // Animated angle based on frameCount and individual speed
     const angle = frameCount * individualSpeed + angleOffset;
 
-    // Calculate particle position in circular orbit
-    const particleX = x + cos(angle) * orbitRadius;
-    const particleY = y + sin(angle) * orbitRadius;
+    // Calculate particle position in circular orbit with animated radius
+    const particleX = x + cos(angle) * animatedOrbitRadius;
+    const particleY = y + sin(angle) * animatedOrbitRadius;
 
     // Draw the particle
     circle(particleX, particleY, particleSize);
