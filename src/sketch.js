@@ -383,7 +383,7 @@ function draw() {
   pop();
 
   // Draw lines connecting selected cells sequentially (draw first so circles appear on top)
-  if (guiParams.showActiveDots) {
+  if (guiParams.showConnectingLines) {
     drawSelectedCellLines(cols, rows, cellW, cellH);
   }
 

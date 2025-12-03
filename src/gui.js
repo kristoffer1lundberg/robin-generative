@@ -16,6 +16,7 @@ const guiParams = {
   showUnconnectedParticles: true,
   showConnectedParticles: true,
   showActiveDots: true,
+  showConnectingLines: true,
 };
 
 // UI elements
@@ -33,7 +34,8 @@ let showGridCheckbox,
   showCrosshairsCheckbox,
   showUnconnectedParticlesCheckbox,
   showConnectedParticlesCheckbox,
-  showActiveDotsCheckbox;
+  showActiveDotsCheckbox,
+  showConnectingLinesCheckbox;
 
 function setupGUI() {
   // Create a container for UI controls
@@ -205,6 +207,13 @@ function setupGUI() {
   );
   showActiveDotsCheckbox.parent(controlsDiv);
   showActiveDotsCheckbox.class("gui-checkbox");
+
+  showConnectingLinesCheckbox = createCheckbox(
+    "Show Connecting Lines",
+    guiParams.showConnectingLines
+  );
+  showConnectingLinesCheckbox.parent(controlsDiv);
+  showConnectingLinesCheckbox.class("gui-checkbox");
 }
 
 function updateGUIParams() {
@@ -224,4 +233,5 @@ function updateGUIParams() {
     showUnconnectedParticlesCheckbox.checked();
   guiParams.showConnectedParticles = showConnectedParticlesCheckbox.checked();
   guiParams.showActiveDots = showActiveDotsCheckbox.checked();
+  guiParams.showConnectingLines = showConnectingLinesCheckbox.checked();
 }
