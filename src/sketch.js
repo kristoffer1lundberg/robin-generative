@@ -155,7 +155,7 @@ function drawAnimatedGlow(x, y, baseRadius, col, row) {
 
   // Animated values
   const glowIntensity = sin(frameCount * individualSpeed);
-  const glowOpacity = mapRange(glowIntensity, -1, 1, 0.1, 0.25);
+  const glowOpacity = mapRange(glowIntensity, -1, 1, 0.05, 0.15);
   const glowSizeMultiplier = mapRange(glowIntensity, -1, 1, sizeMin, sizeMax);
 
   // Draw multiple circles with decreasing opacity to create glow effect
@@ -164,7 +164,7 @@ function drawAnimatedGlow(x, y, baseRadius, col, row) {
 
   // Outer glow layers
   for (let i = 3; i >= 1; i--) {
-    const layerOpacity = glowOpacity * (i / 3) * 0.4;
+    const layerOpacity = glowOpacity * (i / 3) * 0.3;
     const layerSize = baseRadius * glowSizeMultiplier * (1 + i * 0.3);
     fill(255, 255, 255, layerOpacity * 255);
     circle(x, y, layerSize * 2);
@@ -288,7 +288,7 @@ function drawSelectedCellLines(cols, rows, cellW, cellH) {
   }
 
   push();
-  stroke(255);
+  stroke(BORDER_COLOR_MEDIUM);
   strokeWeight(1);
   noFill();
 
