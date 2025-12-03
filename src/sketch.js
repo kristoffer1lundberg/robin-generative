@@ -323,9 +323,6 @@ function drawSelectedCellLines(cols, rows, cellW, cellH) {
   strokeWeight(1);
   noFill();
 
-  // Set dotted line pattern
-  drawingContext.setLineDash([4, 4]); // 4px dash, 4px gap
-
   // Draw lines connecting selected cells sequentially with gradients
   for (let i = 0; i < selectedCells.length - 1; i++) {
     const cellNum1 = selectedCells[i];
@@ -350,9 +347,6 @@ function drawSelectedCellLines(cols, rows, cellW, cellH) {
     // Draw gradient line by drawing multiple segments
     drawGradientLine(x1, y1, x2, y2, color1, color2);
   }
-
-  // Reset line dash to solid
-  drawingContext.setLineDash([]);
 
   pop();
 
