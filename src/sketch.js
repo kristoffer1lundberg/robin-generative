@@ -12,7 +12,7 @@ let sizeSlider, redSlider, greenSlider, blueSlider, showCheckbox, speedSlider;
 function setup() {
   let canvas = createCanvas(windowWidth, windowHeight);
   canvas.parent("sketch-container");
-  background(220);
+  background(20);
 
   // Create a container for UI controls
   let controlsDiv = createDiv();

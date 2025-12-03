@@ -7,11 +7,17 @@
     "start": "node server.js",
     "dev": "node server.js"
   },
-  "keywords": ["p5.js", "generative", "art"],
+  "keywords": [
+    "p5.js",
+    "generative",
+    "art"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "chokidar": "^5.0.0"
   }
 }
-
