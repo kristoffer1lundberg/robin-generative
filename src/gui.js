@@ -3,8 +3,8 @@
 
 // Parameters object that will be accessible from sketch.js
 const guiParams = {
-  cellSize: 3,
-  columns: 40,
+  cellSize: 4,
+  columns: 26,
   rows: 24,
   showCircle: true,
   crosshairOpacityMin: 0.3,

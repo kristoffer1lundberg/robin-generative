@@ -7,6 +7,9 @@ const BORDER_COLOR_STRONG = 100;
 // Array to store selected cell numbers
 let selectedCells = [];
 
+// Track hover animation state for each cell
+let cellHoverAnimations = {};
+
 function setup() {
   let canvas = createCanvas(windowWidth, windowHeight);
   canvas.parent("sketch-container");
@@ -131,8 +134,9 @@ function drawCellHoverCircles(cols, rows, cellW, cellH) {
   const mouseGridX = mouseX - gridTopLeftX;
   const mouseGridY = mouseY - gridTopLeftY;
 
-  const circleRadius = cellW * 0.15;
+  const circleRadius = cellW * 0.2;
   const hoverThreshold = circleRadius * 1.5; // Slightly larger than circle for easier interaction
+  const animationSpeed = 0.15; // Speed of animation (0-1, higher = faster)
 
   let hoveredCell = null;
 
@@ -152,18 +156,54 @@ function drawCellHoverCircles(cols, rows, cellW, cellH) {
       if (distToCircle < hoverThreshold) {
         hoveredCell = cellNumber;
 
+        // Initialize animation state if not exists
+        if (!cellHoverAnimations[cellNumber]) {
+          cellHoverAnimations[cellNumber] = 0;
+        }
+
+        // Animate circle size from 0 to full size
+        cellHoverAnimations[cellNumber] = lerp(
+          cellHoverAnimations[cellNumber],
+          1,
+          animationSpeed
+        );
+
+        // Calculate animated radius
+        const animatedRadius = circleRadius * cellHoverAnimations[cellNumber];
+
         // Draw hover circle
         push();
-        fill(255, 255, 255, 200);
-        noStroke();
-        circle(circleX, circleY, circleRadius * 2);
+        stroke(255);
+        fill(BG_COLOR);
+        circle(circleX, circleY, animatedRadius * 2);
         pop();
+      } else {
+        // If not hovering, animate back to 0
+        if (cellHoverAnimations[cellNumber] !== undefined) {
+          cellHoverAnimations[cellNumber] = lerp(
+            cellHoverAnimations[cellNumber],
+            0,
+            animationSpeed
+          );
+
+          // Remove from animations if close to 0
+          if (cellHoverAnimations[cellNumber] < 0.01) {
+            cellHoverAnimations[cellNumber] = 0;
+          }
+        }
       }
     }
   }
 
   // Store hovered cell for click detection
   window.hoveredCellNumber = hoveredCell;
+
+  // Change cursor to pointer when hovering over a circle
+  if (hoveredCell !== null) {
+    cursor("pointer");
+  } else {
+    cursor("default");
+  }
 }
 
 function mousePressed() {
