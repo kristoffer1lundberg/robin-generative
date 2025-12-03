@@ -66,12 +66,14 @@ function getCellColor(cellNumber, setIndex) {
 
 // Particle class
 class Particle {
-  constructor(x, y) {
+  constructor(x, y, vx, vy) {
     this.x = x;
     this.y = y;
+    this.vx = vx; // Velocity in x direction
+    this.vy = vy; // Velocity in y direction
     this.z = random(0, 1); // Depth value (0 = far, 1 = near)
-    // Calculate fall speed based on z (higher z = faster fall)
-    this.speed = mapRange(this.z, 0, 1, 0.5, 2);
+    // Calculate base speed based on z (higher z = faster)
+    this.baseSpeed = mapRange(this.z, 0, 1, 0.5, 2);
     this.birthTime = millis();
     this.particleId = random(1000000); // Unique ID for this particle
     this.connectedDot = null; // Reference to the active dot this particle is orbiting
@@ -83,9 +85,18 @@ class Particle {
   }
 
   update(cols, rows, cellW, cellH) {
-    // Check if particle should be removed (lifetime expired or fell below grid)
+    // Check if particle should be removed (lifetime expired or outside grid bounds)
+    const gridW = cellW * cols;
     const gridH = cellH * rows;
-    if (millis() - this.birthTime > PARTICLE_LIFETIME || this.y > gridH + 50) {
+    const margin = 50; // Margin outside grid for removal
+
+    if (
+      millis() - this.birthTime > PARTICLE_LIFETIME ||
+      this.x < -margin ||
+      this.x > gridW + margin ||
+      this.y < -margin ||
+      this.y > gridH + margin
+    ) {
       return false; // Mark for removal
     }
 
@@ -141,18 +152,20 @@ class Particle {
         this.x = lerp(this.x, targetX, 0.1);
         this.y = lerp(this.y, targetY, 0.1);
       } else {
-        // Particle is not attracted by this dot (30% chance) - continue falling
+        // Particle is not attracted by this dot (30% chance) - continue moving
         this.connectedDot = null;
         this.orbitRadius = null;
         this.color = [255, 255, 255]; // Reset to white
-        this.y += this.speed;
+        this.x += this.vx * this.baseSpeed;
+        this.y += this.vy * this.baseSpeed;
       }
     } else {
-      // Particle is falling (not near any dot)
+      // Particle is moving (not near any dot)
       this.connectedDot = null;
       this.orbitRadius = null; // Reset orbit radius
       this.color = [255, 255, 255]; // Reset to white
-      this.y += this.speed;
+      this.x += this.vx * this.baseSpeed;
+      this.y += this.vy * this.baseSpeed;
     }
 
     return true; // Keep particle alive
@@ -743,13 +756,44 @@ function drawAnimatedDots(cols, rows, cellW, cellH) {
 }
 
 function spawnParticles(cols, rows, cellW, cellH) {
-  // Spawn particles at the top of the grid with random x positions
+  // Spawn particles from all four sides randomly
   if (random() < PARTICLE_SPAWN_RATE) {
     const gridW = cellW * cols;
-    const x = random(0, gridW);
-    const y = -5; // Start slightly above the grid
-    // Speed is now calculated from z value in the constructor
-    particles.push(new Particle(x, y));
+    const gridH = cellH * rows;
+    const spawnMargin = 5; // Start slightly outside the grid
+
+    // Randomly choose a side: 0 = top, 1 = right, 2 = bottom, 3 = left
+    const side = Math.floor(random(4));
+    let x, y, vx, vy;
+
+    switch (side) {
+      case 0: // Top
+        x = random(0, gridW);
+        y = -spawnMargin;
+        vx = 0;
+        vy = 1; // Move down
+        break;
+      case 1: // Right
+        x = gridW + spawnMargin;
+        y = random(0, gridH);
+        vx = -1; // Move left
+        vy = 0;
+        break;
+      case 2: // Bottom
+        x = random(0, gridW);
+        y = gridH + spawnMargin;
+        vx = 0;
+        vy = -1; // Move up
+        break;
+      case 3: // Left
+        x = -spawnMargin;
+        y = random(0, gridH);
+        vx = 1; // Move right
+        vy = 0;
+        break;
+    }
+
+    particles.push(new Particle(x, y, vx, vy));
   }
 }
 
