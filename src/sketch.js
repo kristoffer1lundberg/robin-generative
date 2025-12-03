@@ -10,6 +10,13 @@ let selectedCells = [];
 // Track hover animation state for each cell
 let cellHoverAnimations = {};
 
+// Particle system
+let particles = [];
+const PARTICLE_LIFETIME = 20000; // 20 seconds in milliseconds
+const PARTICLE_ATTRACTION_DISTANCE = 50; // Distance at which particles are attracted to active dots
+const PARTICLE_ORBIT_RADIUS = 30; // Radius at which particles orbit active dots
+const PARTICLE_SPAWN_RATE = 0.3; // Probability of spawning a particle each frame (0-1)
+
 // Color palette for active dots
 const DOT_COLORS = [
   [255, 100, 100], // Red
@@ -31,6 +38,93 @@ function getCellColor(cellNumber) {
     return [255, 255, 255]; // Default white if not selected
   }
   return DOT_COLORS[index % DOT_COLORS.length];
+}
+
+// Particle class
+class Particle {
+  constructor(x, y, speed) {
+    this.x = x;
+    this.y = y;
+    this.speed = speed; // Vertical fall speed
+    this.birthTime = millis();
+    this.connectedDot = null; // Reference to the active dot this particle is orbiting
+    this.orbitAngle = random(TWO_PI); // Starting angle for orbit
+    this.orbitSpeed = random(0.02, 0.05); // Speed of orbit
+    this.color = [255, 255, 255]; // White by default
+  }
+
+  update(cols, rows, cellW, cellH) {
+    // Check if particle should be removed (lifetime expired or fell below grid)
+    const gridH = cellH * rows;
+    if (millis() - this.birthTime > PARTICLE_LIFETIME || this.y > gridH + 50) {
+      return false; // Mark for removal
+    }
+
+    // Get active dot positions
+    const activeDots = this.getActiveDots(cols, rows, cellW, cellH);
+
+    // Check if particle is close to any active dot
+    let closestDot = null;
+    let closestDist = Infinity;
+
+    for (let dot of activeDots) {
+      const dist = distance(this.x, this.y, dot.x, dot.y);
+      if (dist < PARTICLE_ATTRACTION_DISTANCE && dist < closestDist) {
+        closestDist = dist;
+        closestDot = dot;
+      }
+    }
+
+    if (closestDot) {
+      // Particle is attracted to an active dot
+      if (
+        this.connectedDot === null ||
+        this.connectedDot.cellNumber !== closestDot.cellNumber
+      ) {
+        // New connection - update color
+        this.connectedDot = closestDot;
+        this.color = getCellColor(closestDot.cellNumber);
+      }
+
+      // Orbit around the dot
+      this.orbitAngle += this.orbitSpeed;
+      const targetX =
+        closestDot.x + cos(this.orbitAngle) * PARTICLE_ORBIT_RADIUS;
+      const targetY =
+        closestDot.y + sin(this.orbitAngle) * PARTICLE_ORBIT_RADIUS;
+
+      // Smoothly move towards orbit position
+      this.x = lerp(this.x, targetX, 0.1);
+      this.y = lerp(this.y, targetY, 0.1);
+    } else {
+      // Particle is falling
+      this.connectedDot = null;
+      this.color = [255, 255, 255]; // Reset to white
+      this.y += this.speed;
+    }
+
+    return true; // Keep particle alive
+  }
+
+  getActiveDots(cols, rows, cellW, cellH) {
+    const dots = [];
+    for (let cellNumber of selectedCells) {
+      const col = cellNumber % cols;
+      const row = Math.floor(cellNumber / cols);
+      const x = (col + 1) * cellW;
+      const y = (row + 1) * cellH;
+      dots.push({ x, y, cellNumber });
+    }
+    return dots;
+  }
+
+  draw() {
+    push();
+    noStroke();
+    fill(this.color[0], this.color[1], this.color[2]);
+    circle(this.x, this.y, 3);
+    pop();
+  }
 }
 
 function setup() {
@@ -138,6 +232,10 @@ function draw() {
 
   // Draw lines connecting selected cells sequentially (draw first so circles appear on top)
   drawSelectedCellLines(cols, rows, cellW, cellH);
+
+  // Update and draw particles
+  updateParticles(cols, rows, cellW, cellH);
+  drawParticles();
 
   // Draw hover circles and handle interactions (draw last so they appear on top of lines)
   drawCellHoverCircles(cols, rows, cellW, cellH);
@@ -473,6 +571,34 @@ function drawAnimatedDots(cols, rows, cellW, cellH) {
   }
 
   pop();
+}
+
+function spawnParticles(cols, rows, cellW, cellH) {
+  // Spawn particles at the top of the grid with random x positions
+  if (random() < PARTICLE_SPAWN_RATE) {
+    const gridW = cellW * cols;
+    const x = random(0, gridW);
+    const y = -5; // Start slightly above the grid
+    const speed = random(0.5, 2); // Random fall speed
+    particles.push(new Particle(x, y, speed));
+  }
+}
+
+function updateParticles(cols, rows, cellW, cellH) {
+  // Spawn new particles
+  spawnParticles(cols, rows, cellW, cellH);
+
+  // Update all particles and remove dead ones
+  particles = particles.filter((particle) => {
+    return particle.update(cols, rows, cellW, cellH);
+  });
+}
+
+function drawParticles() {
+  // Draw all particles
+  for (let particle of particles) {
+    particle.draw();
+  }
 }
 
 function mousePressed() {
