@@ -158,7 +158,7 @@ function drawAnimatedGlow(x, y, baseRadius, col, row, cellNumber) {
 
   // Vary animation speed based on hash (similar to crosshairs)
   const speedVariation = 0.5; // How much speed can vary (0.5 = 50% variation)
-  const baseSpeed = 0.02;
+  const baseSpeed = 0.015;
   const speedMultiplier = mapRange(
     hash,
     0,
@@ -168,33 +168,39 @@ function drawAnimatedGlow(x, y, baseRadius, col, row, cellNumber) {
   );
   const individualSpeed = baseSpeed * speedMultiplier;
 
-  // Vary size multiplier based on hash (using a different mapping for variety)
-  const sizeHash = (((col * 19349663) ^ (row * 73856093)) % 1000) / 1000;
-  const sizeVariation = 0.4; // How much size can vary
-  const baseSizeMin = 1.1;
-  const baseSizeMax = 2;
-  const sizeMin = baseSizeMin * (1 - sizeVariation);
-  const sizeMax = baseSizeMax * (1 + sizeVariation);
-
-  // Animated values
-  const glowIntensity = sin(frameCount * individualSpeed);
-  const glowOpacity = mapRange(glowIntensity, -1, 1, 0.3, 0.55);
-  const glowSizeMultiplier = mapRange(glowIntensity, -1, 1, sizeMin, sizeMax);
+  // Vary orbit radius based on hash (using a different mapping for variety)
+  const radiusHash = (((col * 19349663) ^ (row * 73856093)) % 1000) / 1000;
+  const radiusVariation = 0.3; // How much radius can vary
+  const baseOrbitRadius = baseRadius * 1.5;
+  const orbitRadius =
+    baseOrbitRadius *
+    mapRange(radiusHash, 0, 1, 1 - radiusVariation, 1 + radiusVariation);
 
   // Get cell color
   const cellColor = getCellColor(cellNumber);
 
-  // Draw multiple circles with decreasing opacity to create glow effect
+  // Number of particles orbiting
+  const numParticles = 6;
+  const particleSize = 2;
+
   push();
   noStroke();
+  fill(cellColor[0], cellColor[1], cellColor[2], 200);
 
-  // Outer glow layers
-  for (let i = 3; i >= 1; i--) {
-    const layerOpacity = glowOpacity * (i / 3) * 0.3;
-    const layerSize = baseRadius * glowSizeMultiplier * (1 + i * 0.3);
-    noFill();
-    stroke(cellColor[0], cellColor[1], cellColor[2], layerOpacity * 255);
-    circle(x, y, layerSize * 2);
+  // Draw particles orbiting in circles
+  for (let i = 0; i < numParticles; i++) {
+    // Each particle starts at a different angle offset
+    const angleOffset = (TWO_PI * i) / numParticles;
+
+    // Animated angle based on frameCount and individual speed
+    const angle = frameCount * individualSpeed + angleOffset;
+
+    // Calculate particle position in circular orbit
+    const particleX = x + cos(angle) * orbitRadius;
+    const particleY = y + sin(angle) * orbitRadius;
+
+    // Draw the particle
+    circle(particleX, particleY, particleSize);
   }
 
   pop();
