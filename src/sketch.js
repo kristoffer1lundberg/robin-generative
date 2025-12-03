@@ -116,6 +116,9 @@ function draw() {
   // Draw hover circles and handle interactions
   drawCellHoverCircles(cols, rows, cellW, cellH);
 
+  // Draw lines connecting selected cells sequentially
+  drawSelectedCellLines(cols, rows, cellW, cellH);
+
   pop(); // End grid coordinate system
 
   // Use the parameters from the GUI
@@ -150,6 +153,9 @@ function drawCellHoverCircles(cols, rows, cellW, cellH) {
       // Calculate cell number (row-major order: row * cols + col)
       const cellNumber = j * cols + i;
 
+      // Check if this cell is selected
+      const isSelected = selectedCells.includes(cellNumber);
+
       // Check if mouse is hovering over the circle
       const distToCircle = distance(mouseGridX, mouseGridY, circleX, circleY);
 
@@ -161,12 +167,17 @@ function drawCellHoverCircles(cols, rows, cellW, cellH) {
           cellHoverAnimations[cellNumber] = 0;
         }
 
-        // Animate circle size from 0 to full size
-        cellHoverAnimations[cellNumber] = lerp(
-          cellHoverAnimations[cellNumber],
-          1,
-          animationSpeed
-        );
+        // Animate circle size from 0 to full size (only if not selected)
+        if (!isSelected) {
+          cellHoverAnimations[cellNumber] = lerp(
+            cellHoverAnimations[cellNumber],
+            1,
+            animationSpeed
+          );
+        } else {
+          // Keep selected cells at full size
+          cellHoverAnimations[cellNumber] = 1;
+        }
 
         // Calculate animated radius
         const animatedRadius = circleRadius * cellHoverAnimations[cellNumber];
@@ -178,17 +189,28 @@ function drawCellHoverCircles(cols, rows, cellW, cellH) {
         circle(circleX, circleY, animatedRadius * 2);
         pop();
       } else {
-        // If not hovering, animate back to 0
-        if (cellHoverAnimations[cellNumber] !== undefined) {
-          cellHoverAnimations[cellNumber] = lerp(
-            cellHoverAnimations[cellNumber],
-            0,
-            animationSpeed
-          );
+        // If selected, keep circle visible at full size
+        if (isSelected) {
+          cellHoverAnimations[cellNumber] = 1;
+          // Draw selected circle
+          push();
+          stroke(255);
+          fill(BG_COLOR);
+          circle(circleX, circleY, circleRadius * 2);
+          pop();
+        } else {
+          // If not hovering and not selected, animate back to 0
+          if (cellHoverAnimations[cellNumber] !== undefined) {
+            cellHoverAnimations[cellNumber] = lerp(
+              cellHoverAnimations[cellNumber],
+              0,
+              animationSpeed
+            );
 
-          // Remove from animations if close to 0
-          if (cellHoverAnimations[cellNumber] < 0.01) {
-            cellHoverAnimations[cellNumber] = 0;
+            // Remove from animations if close to 0
+            if (cellHoverAnimations[cellNumber] < 0.01) {
+              cellHoverAnimations[cellNumber] = 0;
+            }
           }
         }
       }
@@ -206,6 +228,41 @@ function drawCellHoverCircles(cols, rows, cellW, cellH) {
   }
 }
 
+function drawSelectedCellLines(cols, rows, cellW, cellH) {
+  // Only draw lines if there are at least 2 selected cells
+  if (selectedCells.length < 2) {
+    return;
+  }
+
+  push();
+  stroke(255);
+  strokeWeight(1);
+  noFill();
+
+  // Draw lines connecting selected cells sequentially
+  for (let i = 0; i < selectedCells.length - 1; i++) {
+    const cellNum1 = selectedCells[i];
+    const cellNum2 = selectedCells[i + 1];
+
+    // Convert cell number to grid coordinates
+    const col1 = cellNum1 % cols;
+    const row1 = Math.floor(cellNum1 / cols);
+    const col2 = cellNum2 % cols;
+    const row2 = Math.floor(cellNum2 / cols);
+
+    // Calculate circle positions (bottom-right corner of each cell)
+    const x1 = (col1 + 1) * cellW;
+    const y1 = (row1 + 1) * cellH;
+    const x2 = (col2 + 1) * cellW;
+    const y2 = (row2 + 1) * cellH;
+
+    // Draw line between the two points
+    line(x1, y1, x2, y2);
+  }
+
+  pop();
+}
+
 function mousePressed() {
   if (
     window.hoveredCellNumber !== null &&
@@ -217,8 +274,14 @@ function mousePressed() {
     const index = selectedCells.indexOf(cellNum);
     if (index > -1) {
       selectedCells.splice(index, 1);
+      // Reset animation state when deselected
+      if (cellHoverAnimations[cellNum] !== undefined) {
+        cellHoverAnimations[cellNum] = 0;
+      }
     } else {
       selectedCells.push(cellNum);
+      // Set animation state to full when selected
+      cellHoverAnimations[cellNum] = 1;
     }
 
     // Log for debugging (you can remove this later)
