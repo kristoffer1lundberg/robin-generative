@@ -11,6 +11,9 @@ let currentSetIndex = 0; // Index of the current set being edited
 // Track hover animation state for each cell
 let cellHoverAnimations = {};
 
+// Track particle animation state for each cell (for lighting up cells with particles)
+let cellParticleAnimations = {};
+
 // Particle system
 let particles = [];
 const PARTICLE_LIFETIME = 20000; // 20 seconds in milliseconds
@@ -31,6 +34,21 @@ const DOT_COLORS = [
   [255, 200, 100], // Peach
   [100, 200, 255], // Light Blue
 ];
+
+// Get cell number from grid coordinates (x, y in grid coordinate system)
+function getCellNumberFromPosition(x, y, cols, rows, cellW, cellH) {
+  // Calculate which cell this position is in
+  const col = Math.floor(x / cellW);
+  const row = Math.floor(y / cellH);
+
+  // Check bounds
+  if (col < 0 || col >= cols || row < 0 || row >= rows) {
+    return null;
+  }
+
+  // Calculate cell number (row-major order: row * cols + col)
+  return row * cols + col;
+}
 
 // Get color for a cell based on its index within its set
 function getCellColor(cellNumber, setIndex) {
@@ -173,10 +191,8 @@ class Particle {
     noStroke();
     // Opacity based on z value (higher z = more opaque, more drastic range)
     const opacity = mapRange(this.z, 0, 1, 20, 255);
-    // Size based on z value (higher z = larger particles)
-    const size = mapRange(this.z, 0, 1, 1.5, 4);
     fill(this.color[0], this.color[1], this.color[2], opacity);
-    circle(this.x, this.y, size);
+    circle(this.x, this.y, 3);
     pop();
   }
 }
@@ -224,7 +240,85 @@ function draw() {
   // Now all coordinates are relative to the grid's coordinate system
   rectMode(CENTER);
 
-  // First, draw all grid cells
+  // Update particles first (before checking which cells they're in)
+  updateParticles(cols, rows, cellW, cellH);
+
+  // Track which cells have particles (reset each frame)
+  const cellsWithParticles = new Set();
+  for (let particle of particles) {
+    const cellNum = getCellNumberFromPosition(
+      particle.x,
+      particle.y,
+      cols,
+      rows,
+      cellW,
+      cellH
+    );
+    if (cellNum !== null) {
+      cellsWithParticles.add(cellNum);
+    }
+  }
+
+  // Update animation states for cells with particles
+  const particleCellAnimationSpeed = 0.1; // Speed of animation (0-1, higher = faster)
+  for (let i = 0; i < cols; i++) {
+    for (let j = 0; j < rows; j++) {
+      const cellNumber = j * cols + i;
+      const hasParticle = cellsWithParticles.has(cellNumber);
+
+      // Initialize animation state if not exists
+      if (!cellParticleAnimations[cellNumber]) {
+        cellParticleAnimations[cellNumber] = 0;
+      }
+
+      // Animate towards 1 if particle is present, towards 0 if not
+      if (hasParticle) {
+        cellParticleAnimations[cellNumber] = lerp(
+          cellParticleAnimations[cellNumber],
+          1,
+          particleCellAnimationSpeed
+        );
+      } else {
+        cellParticleAnimations[cellNumber] = lerp(
+          cellParticleAnimations[cellNumber],
+          0,
+          particleCellAnimationSpeed
+        );
+        // Remove from animations if close to 0
+        if (cellParticleAnimations[cellNumber] < 0.01) {
+          cellParticleAnimations[cellNumber] = 0;
+        }
+      }
+    }
+  }
+
+  // First, draw animated backgrounds for cells with particles
+  push();
+  noStroke();
+  for (let i = 0; i < cols; i++) {
+    for (let j = 0; j < rows; j++) {
+      const cellNumber = j * cols + i;
+      const animationValue = cellParticleAnimations[cellNumber] || 0;
+
+      if (animationValue > 0) {
+        // Cell center in grid coordinates
+        let x = cellW / 2 + i * cellW;
+        let y = cellH / 2 + j * cellH;
+
+        // Animated weak grey color with pulsing effect
+        const pulse = sin(frameCount * 0.05 + cellNumber * 0.1) * 0.3 + 0.7; // Pulse between 0.4 and 1.0
+        const greyValue = 60; // Weak grey base value (reduced for subtlety)
+        const opacity = animationValue * pulse * 40; // Max opacity of 40 (reduced for subtlety)
+
+        fill(greyValue, opacity);
+        rectMode(CENTER);
+        rect(x, y, cellW, cellH);
+      }
+    }
+  }
+  pop();
+
+  // Then, draw all grid cell borders
   stroke(BORDER_COLOR_WEAK);
   noFill();
   for (let i = 0; i < cols; i++) {
@@ -287,8 +381,7 @@ function draw() {
   // Draw lines connecting selected cells sequentially (draw first so circles appear on top)
   drawSelectedCellLines(cols, rows, cellW, cellH);
 
-  // Update and draw particles
-  updateParticles(cols, rows, cellW, cellH);
+  // Draw particles (already updated earlier)
   drawParticles();
 
   // Draw hover circles and handle interactions (draw last so they appear on top of lines)
