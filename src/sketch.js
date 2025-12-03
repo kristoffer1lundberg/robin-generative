@@ -42,10 +42,12 @@ function getCellColor(cellNumber) {
 
 // Particle class
 class Particle {
-  constructor(x, y, speed) {
+  constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.speed = speed; // Vertical fall speed
+    this.z = random(0, 1); // Depth value (0 = far, 1 = near)
+    // Calculate fall speed based on z (higher z = faster fall)
+    this.speed = mapRange(this.z, 0, 1, 0.5, 2);
     this.birthTime = millis();
     this.connectedDot = null; // Reference to the active dot this particle is orbiting
     this.orbitAngle = random(TWO_PI); // Starting angle for orbit
@@ -126,7 +128,9 @@ class Particle {
   draw() {
     push();
     noStroke();
-    fill(this.color[0], this.color[1], this.color[2]);
+    // Opacity based on z value (higher z = more opaque, more drastic range)
+    const opacity = mapRange(this.z, 0, 1, 20, 255);
+    fill(this.color[0], this.color[1], this.color[2], opacity);
     circle(this.x, this.y, 3);
     pop();
   }
@@ -584,8 +588,8 @@ function spawnParticles(cols, rows, cellW, cellH) {
     const gridW = cellW * cols;
     const x = random(0, gridW);
     const y = -5; // Start slightly above the grid
-    const speed = random(0.5, 2); // Random fall speed
-    particles.push(new Particle(x, y, speed));
+    // Speed is now calculated from z value in the constructor
+    particles.push(new Particle(x, y));
   }
 }
 
