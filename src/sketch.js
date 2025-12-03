@@ -82,21 +82,31 @@ class Particle {
     this.orbitRadius = null; // Will be set to a random value when connecting to a dot
     this.color = [255, 255, 255]; // White by default
     this.attractionMap = {}; // Map of dot cellNumber -> whether this particle will be attracted
+    this.hasBeenInsideGrid = false; // Track if particle has entered the grid
   }
 
   update(cols, rows, cellW, cellH) {
     // Check if particle should be removed (lifetime expired or outside grid bounds)
     const gridW = cellW * cols;
     const gridH = cellH * rows;
-    const margin = 50; // Margin outside grid for removal
 
-    if (
-      millis() - this.birthTime > PARTICLE_LIFETIME ||
-      this.x < -margin ||
-      this.x > gridW + margin ||
-      this.y < -margin ||
-      this.y > gridH + margin
-    ) {
+    // Remove if lifetime expired
+    if (millis() - this.birthTime > PARTICLE_LIFETIME) {
+      return false;
+    }
+
+    // Check if particle is currently inside the grid
+    const isInside =
+      this.x >= 0 && this.x <= gridW && this.y >= 0 && this.y <= gridH;
+
+    // Mark that particle has been inside the grid
+    if (isInside) {
+      this.hasBeenInsideGrid = true;
+    }
+
+    // Remove immediately if particle has been inside and is now outside
+    // This allows particles to spawn outside and enter, but removes them immediately when they exit
+    if (this.hasBeenInsideGrid && !isInside) {
       return false; // Mark for removal
     }
 
