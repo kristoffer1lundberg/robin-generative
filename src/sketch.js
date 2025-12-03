@@ -206,8 +206,20 @@ function drawAnimatedGlow(x, y, baseRadius, col, row, cellNumber) {
     // Each particle starts at a different angle offset
     const angleOffset = (TWO_PI * i) / numParticles;
 
-    // Animated angle based on frameCount and individual speed
-    const angle = frameCount * individualSpeed + angleOffset;
+    // Add individual speed variation for each particle
+    const particleSpeedVariation = 0.3; // How much each particle's speed can vary
+    const particleHash = ((i * 73856093) % 1000) / 1000;
+    const particleSpeedMultiplier = mapRange(
+      particleHash,
+      0,
+      1,
+      1 - particleSpeedVariation,
+      1 + particleSpeedVariation
+    );
+    const particleSpeed = individualSpeed * particleSpeedMultiplier;
+
+    // Animated angle based on frameCount and individual particle speed
+    const angle = frameCount * particleSpeed + angleOffset;
 
     // Calculate particle position in circular orbit with animated radius
     const particleX = x + cos(angle) * animatedOrbitRadius;
